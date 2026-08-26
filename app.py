@@ -1,3 +1,4 @@
+cat > /mnt/user-data/outputs/app.py << 'PYEOF'
 import streamlit as st
 from tensorflow.keras.models import load_model
 from PIL import Image
@@ -14,102 +15,118 @@ st.set_page_config(
 st.markdown("""
     <style>
     .stApp {
-        background: radial-gradient(circle at top left, #f1faf3 0%, #fafdf9 40%);
+        background: radial-gradient(circle at top left, #2b3d22 0%, #1c2a17 55%, #141f10 100%);
     }
+    .stApp, .stApp p, .stApp span, .stApp label, .stApp li, .stMarkdown, .stCaption, div[data-testid="stCaptionContainer"] {
+        color: #eef2e6 !important;
+    }
+    .stApp .stSelectbox label, .stApp .stFileUploader label { color: #eef2e6 !important; }
+
     .hero {
-        background: linear-gradient(135deg, #14532d 0%, #2d6a4f 35%, #40916c 65%, #74c69d 100%);
+        background: linear-gradient(135deg, #23331b 0%, #35492a 45%, #4a6339 100%);
         padding: 2.4rem 2.6rem;
-        border-radius: 20px;
+        border-radius: 24px;
         margin-bottom: 1.8rem;
-        box-shadow: 0 10px 30px rgba(20,83,45,0.3);
+        box-shadow: 0 12px 32px rgba(0,0,0,0.35);
+        border: 1px solid rgba(255,255,255,0.08);
         position: relative;
         overflow: hidden;
     }
     .hero::after {
-        content: "🌿";
+        content: "🌾";
         position: absolute;
         right: -10px;
         top: -30px;
         font-size: 10rem;
-        opacity: 0.14;
+        opacity: 0.10;
         transform: rotate(15deg);
     }
     .hero-title {
         font-size: 2.6rem;
         font-weight: 800;
-        background: linear-gradient(90deg, #ffffff, #ffe066, #d8f3dc);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: #f6f9f2;
         margin-bottom: 4px;
         position: relative;
         z-index: 1;
     }
     .hero-sub {
         font-size: 1.05rem;
-        color: #d8f3dc;
+        color: #d3ddc7;
         margin-bottom: 0;
         position: relative;
         z-index: 1;
     }
     .hero-badge {
         display: inline-block;
-        background: rgba(255,255,255,0.18);
-        color: white;
-        padding: 5px 16px;
-        border-radius: 20px;
+        background: #f2c744;
+        color: #23331b;
+        font-weight: 700;
+        padding: 6px 18px;
+        border-radius: 30px;
         font-size: 0.8rem;
-        margin-top: 12px;
-        border: 1px solid rgba(255,255,255,0.35);
+        margin-top: 14px;
         position: relative;
         z-index: 1;
     }
+
     .stat-card {
-        border-radius: 14px;
-        padding: 1rem 1.2rem;
+        background: rgba(255,255,255,0.06);
+        border-radius: 18px;
+        padding: 1.1rem 1.2rem;
         text-align: center;
-        box-shadow: 0 3px 12px rgba(0,0,0,0.08);
-        border: 1px solid rgba(255,255,255,0.4);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+        border: 1px solid rgba(255,255,255,0.10);
         transition: transform 0.2s ease;
-        color: white;
+        color: #f6f9f2;
     }
-    .stat-card:hover { transform: translateY(-3px); }
+    .stat-card:hover { transform: translateY(-3px); border-color: rgba(242,199,68,0.5); }
     .stat-num {
-        font-size: 1.7rem;
+        font-size: 1.8rem;
         font-weight: 800;
-        color: white;
+        color: #f2c744;
     }
-    .stat-label { font-size: 0.8rem; color: rgba(255,255,255,0.9); margin-top: 2px; }
-    .stat-1 { background: linear-gradient(135deg, #1b4332, #40916c); }
-    .stat-2 { background: linear-gradient(135deg, #2d6a4f, #74c69d); }
-    .stat-3 { background: linear-gradient(135deg, #8a5a2e, #c98a3f); }
-    .stat-4 { background: linear-gradient(135deg, #52734d, #95b46a); }
+    .stat-label { font-size: 0.8rem; color: #d3ddc7; margin-top: 2px; }
 
     .upload-panel-label {
         font-weight: 700;
-        color: #14532d;
+        color: #f6f9f2;
         margin-bottom: 0.6rem;
     }
 
     /* Style Streamlit's ACTUAL dropzone so the whole visible box is the real drop target */
     div[data-testid="stFileUploaderDropzone"] {
-        border: 2.5px dashed #40916c !important;
-        border-radius: 18px !important;
-        background: linear-gradient(135deg, #f0fdf4 0%, #e6f7ee 100%) !important;
+        border: 2.5px dashed rgba(242,199,68,0.55) !important;
+        border-radius: 20px !important;
+        background: rgba(255,255,255,0.05) !important;
         padding: 1.2rem !important;
-        box-shadow: 0 3px 14px rgba(45,106,79,0.08);
+        box-shadow: 0 3px 14px rgba(0,0,0,0.2);
         transition: border-color 0.2s ease, background 0.2s ease;
     }
     div[data-testid="stFileUploaderDropzone"]:hover {
-        border-color: #c98a3f !important;
-        background: linear-gradient(135deg, #fdf6ea 0%, #faecd2 100%) !important;
+        border-color: #f2c744 !important;
+        background: rgba(242,199,68,0.08) !important;
+    }
+    div[data-testid="stFileUploaderDropzone"] span,
+    div[data-testid="stFileUploaderDropzone"] small,
+    div[data-testid="stFileUploaderDropzone"] svg {
+        color: #eef2e6 !important;
+        fill: #eef2e6 !important;
+    }
+    div[data-testid="stFileUploaderDropzone"] button {
+        background: #f2c744 !important;
+        color: #23331b !important;
+        border: none !important;
+        border-radius: 30px !important;
+        font-weight: 700 !important;
     }
 
     .result-card {
-        background: white;
-        border-radius: 18px;
+        background: rgba(255,255,255,0.06);
+        border-radius: 20px;
         padding: 1.6rem 1.8rem;
-        box-shadow: 0 6px 22px rgba(0,0,0,0.1);
-        border-top: 6px solid #2d6a4f;
+        box-shadow: 0 8px 26px rgba(0,0,0,0.3);
+        border: 1px solid rgba(255,255,255,0.10);
+        border-top: 5px solid #f2c744;
         animation: fadeIn 0.5s ease-in;
     }
     @keyframes fadeIn {
@@ -117,9 +134,9 @@ st.markdown("""
         to { opacity: 1; transform: translateY(0); }
     }
     @keyframes pulse {
-        0% { box-shadow: 0 0 0 0 rgba(0,0,0,0.15); }
-        70% { box-shadow: 0 0 0 8px rgba(0,0,0,0); }
-        100% { box-shadow: 0 0 0 0 rgba(0,0,0,0); }
+        0% { box-shadow: 0 0 0 0 rgba(242,199,68,0.35); }
+        70% { box-shadow: 0 0 0 8px rgba(242,199,68,0); }
+        100% { box-shadow: 0 0 0 0 rgba(242,199,68,0); }
     }
     .status-dot {
         display: inline-block;
@@ -133,12 +150,12 @@ st.markdown("""
         font-size: 0.78rem;
         font-weight: 700;
         letter-spacing: 1.2px;
-        color: #999;
+        color: #bcc7ab;
         text-transform: uppercase;
     }
-    .result-name { font-size: 1.7rem; font-weight: 800; margin-top: 4px; }
+    .result-name { font-size: 1.7rem; font-weight: 800; margin-top: 4px; color: #f6f9f2; }
     .confidence-bar-bg {
-        background-color: #eee;
+        background-color: rgba(255,255,255,0.12);
         border-radius: 10px;
         height: 16px;
         width: 100%;
@@ -151,66 +168,82 @@ st.markdown("""
         transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .treatment-box {
-        background: linear-gradient(135deg, #fff8e6 0%, #fde5b0 100%);
-        border-radius: 16px;
+        background: rgba(242,199,68,0.10);
+        border-radius: 18px;
         padding: 1.3rem 1.6rem;
         margin-top: 1.2rem;
-        border: 1px solid #f0c869;
+        border: 1px solid rgba(242,199,68,0.35);
     }
     .section-header {
         font-size: 1.35rem;
         font-weight: 800;
-        color: #14532d;
+        color: #f6f9f2;
         margin: 2.2rem 0 1rem 0;
     }
     .helpline-card {
-        background: linear-gradient(135deg, #e7f3ff 0%, #bfe0ff 100%);
-        border-radius: 16px;
+        background: rgba(255,255,255,0.06);
+        border-radius: 18px;
         padding: 1.4rem 1.7rem;
-        border: 1px solid #90c8f7;
+        border: 1px solid rgba(255,255,255,0.10);
     }
     .roadmap-chip {
-        color: white;
-        border-radius: 14px;
+        background: rgba(255,255,255,0.06);
+        color: #f6f9f2;
+        border-radius: 16px;
         padding: 1rem 1.1rem;
         margin-bottom: 8px;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+        border: 1px solid rgba(255,255,255,0.10);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.2);
         transition: transform 0.2s ease;
     }
-    .roadmap-chip:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.18); }
-    .roadmap-chip span { color: rgba(255,255,255,0.9) !important; }
-    .chip-1 { background: linear-gradient(135deg, #8a5a2e, #c98a3f); }
-    .chip-2 { background: linear-gradient(135deg, #1b4332, #52734d); }
-    .chip-3 { background: linear-gradient(135deg, #2d6a4f, #74c69d); }
-    .chip-4 { background: linear-gradient(135deg, #40916c, #95b46a); }
+    .roadmap-chip:hover { transform: translateY(-3px); border-color: rgba(242,199,68,0.5); }
+    .roadmap-chip span { color: #d3ddc7 !important; }
     .step-card {
-        color: white;
-        border-radius: 16px;
+        background: rgba(255,255,255,0.06);
+        color: #f6f9f2;
+        border-radius: 18px;
         padding: 1.3rem 1.2rem;
         text-align: center;
-        box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+        border: 1px solid rgba(255,255,255,0.10);
+        box-shadow: 0 4px 14px rgba(0,0,0,0.22);
         height: 100%;
     }
-    .step-1 { background: linear-gradient(160deg, #1b4332, #40916c); }
-    .step-2 { background: linear-gradient(160deg, #2d6a4f, #74c69d); }
-    .step-3 { background: linear-gradient(160deg, #8a5a2e, #c98a3f); }
     .step-num {
         width: 34px; height: 34px;
         border-radius: 50%;
-        background: rgba(255,255,255,0.25);
-        color: white;
+        background: #f2c744;
+        color: #23331b;
         display: flex; align-items: center; justify-content: center;
         font-weight: 800;
         margin: 0 auto 10px auto;
     }
     .footer-note {
-        color: #999;
+        color: #9fab8f;
         font-size: 0.8rem;
         margin-top: 3rem;
         text-align: center;
         padding-top: 1.5rem;
-        border-top: 1px solid #eee;
+        border-top: 1px solid rgba(255,255,255,0.10);
     }
+
+    /* Streamlit native widgets */
+    div[data-testid="stSelectbox"] > div {
+        background: rgba(255,255,255,0.08) !important;
+        border-radius: 14px !important;
+        border: 1px solid rgba(255,255,255,0.15) !important;
+    }
+    div[data-testid="stSelectbox"] div, div[data-testid="stSelectbox"] span {
+        color: #eef2e6 !important;
+    }
+    .stButton button {
+        background: #f2c744 !important;
+        color: #23331b !important;
+        border: none !important;
+        border-radius: 30px !important;
+        font-weight: 700 !important;
+        padding: 0.6rem 1.2rem !important;
+    }
+    .stButton button:hover { background: #f6d768 !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -236,13 +269,13 @@ st.markdown("""
 # ---------- Stat row ----------
 s1, s2, s3, s4 = st.columns(4)
 with s1:
-    st.markdown('<div class="stat-card stat-1"><div class="stat-num">4</div><div class="stat-label">Crops covered</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="stat-card"><div class="stat-num">4</div><div class="stat-label">Crops covered</div></div>', unsafe_allow_html=True)
 with s2:
-    st.markdown('<div class="stat-card stat-2"><div class="stat-num">99%+</div><div class="stat-label">Model accuracy</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="stat-card"><div class="stat-num">99%+</div><div class="stat-label">Model accuracy</div></div>', unsafe_allow_html=True)
 with s3:
-    st.markdown('<div class="stat-card stat-3"><div class="stat-num">4</div><div class="stat-label">Languages</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="stat-card"><div class="stat-num">4</div><div class="stat-label">Languages</div></div>', unsafe_allow_html=True)
 with s4:
-    st.markdown('<div class="stat-card stat-4"><div class="stat-num">Offline</div><div class="stat-label">Field-ready design</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="stat-card"><div class="stat-num">Offline</div><div class="stat-label">Field-ready design</div></div>', unsafe_allow_html=True)
 
 st.write("")
 
@@ -250,11 +283,11 @@ st.write("")
 st.markdown('<div class="section-header">⚡ How it works</div>', unsafe_allow_html=True)
 h1, h2, h3 = st.columns(3)
 with h1:
-    st.markdown('<div class="step-card step-1"><div class="step-num">1</div><b>📷 Snap a photo</b><br><span style="opacity:0.9; font-size:0.85rem;">Take a clear photo of the affected leaf</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="step-card"><div class="step-num">1</div><b>📷 Snap a photo</b><br><span style="opacity:0.85; font-size:0.85rem;">Take a clear photo of the affected leaf</span></div>', unsafe_allow_html=True)
 with h2:
-    st.markdown('<div class="step-card step-2"><div class="step-num">2</div><b>🧠 AI analyzes</b><br><span style="opacity:0.9; font-size:0.85rem;">On-device model detects disease instantly</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="step-card"><div class="step-num">2</div><b>🧠 AI analyzes</b><br><span style="opacity:0.85; font-size:0.85rem;">On-device model detects disease instantly</span></div>', unsafe_allow_html=True)
 with h3:
-    st.markdown('<div class="step-card step-3"><div class="step-num">3</div><b>🗣️ Get advice</b><br><span style="opacity:0.9; font-size:0.85rem;">Hear treatment steps in your language</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="step-card"><div class="step-num">3</div><b>🗣️ Get advice</b><br><span style="opacity:0.85; font-size:0.85rem;">Hear treatment steps in your language</span></div>', unsafe_allow_html=True)
 
 st.write("")
 
@@ -298,7 +331,7 @@ disease_info = {
     }
 }
 
-severity_colors = {"healthy": "#2d6a4f", "moderate": "#e0a800", "severe": "#c0392b"}
+severity_colors = {"healthy": "#7bd389", "moderate": "#f2c744", "severe": "#e0665a"}
 severity_labels = {"healthy": "Healthy", "moderate": "Moderate risk", "severe": "Severe — act now"}
 
 # ---------- Upload + Result ----------
@@ -328,7 +361,7 @@ with col_result:
             "treatment_kn": "ಸ್ಥಳೀಯ ಕೃಷಿ ತಜ್ಞರನ್ನು ಸಂಪರ್ಕಿಸಿ.",
             "severity": "moderate"
         })
-        color = severity_colors.get(info["severity"], "#2d6a4f")
+        color = severity_colors.get(info["severity"], "#f2c744")
 
         st.markdown(f"""
             <div class="result-card" style="border-top-color:{color};">
@@ -338,7 +371,7 @@ with col_result:
                     <span class="status-dot" style="background-color:{color};"></span>
                     <span style="font-weight:600; color:{color};">{severity_labels.get(info['severity'], '')}</span>
                 </div>
-                <div style="margin-top:14px; font-size:0.85rem; color:#666;">Confidence: <b>{confidence:.1f}%</b></div>
+                <div style="margin-top:14px; font-size:0.85rem; color:#d3ddc7;">Confidence: <b>{confidence:.1f}%</b></div>
                 <div class="confidence-bar-bg">
                     <div class="confidence-bar-fill" style="width:{confidence}%; background-color:{color};"></div>
                 </div>
@@ -357,8 +390,8 @@ with col_result:
 
         st.markdown(f"""
             <div class="treatment-box">
-                <div style="font-weight:700; color:#7a5c00; margin-bottom:6px;">💊 Recommended action</div>
-                <div style="color:#444; line-height:1.6;">{treatment_text}</div>
+                <div style="font-weight:700; color:#f2c744; margin-bottom:6px;">💊 Recommended action</div>
+                <div style="color:#eef2e6; line-height:1.6;">{treatment_text}</div>
             </div>
         """, unsafe_allow_html=True)
 
@@ -369,7 +402,7 @@ with col_result:
             st.audio("output.mp3")
     else:
         st.markdown("""
-            <div style="height:100%; display:flex; align-items:center; justify-content:center; text-align:center; color:#999; padding: 3rem 1rem;">
+            <div style="height:100%; display:flex; align-items:center; justify-content:center; text-align:center; color:#9fab8f; padding: 3rem 1rem;">
                 <div>
                     <div style="font-size:3.2rem;">🌱</div>
                     <div style="margin-top:10px;">Upload a photo to see detection results here</div>
@@ -381,10 +414,10 @@ with col_result:
 st.markdown('<div class="section-header">📞 Farmer helpline & support</div>', unsafe_allow_html=True)
 st.markdown("""
     <div class="helpline-card">
-        <div style="font-weight:700; color:#0c4a75; margin-bottom:6px;">📱 Kisan Call Centre (Government of India)</div>
-        <div style="color:#333; font-size:0.95rem; margin-bottom:14px;">Toll-free <b>1800-180-1551</b> · 6 AM–10 PM, all 7 days · 22 local languages</div>
-        <div style="font-weight:700; color:#0c4a75; margin-bottom:6px;">📱 PM-KISAN Helpline</div>
-        <div style="color:#333; font-size:0.95rem;">Toll-free <b>155261</b> / <b>1800-115-526</b> &nbsp;|&nbsp; ☎️ 011-24300606</div>
+        <div style="font-weight:700; color:#f2c744; margin-bottom:6px;">📱 Kisan Call Centre (Government of India)</div>
+        <div style="color:#eef2e6; font-size:0.95rem; margin-bottom:14px;">Toll-free <b>1800-180-1551</b> · 6 AM–10 PM, all 7 days · 22 local languages</div>
+        <div style="font-weight:700; color:#f2c744; margin-bottom:6px;">📱 PM-KISAN Helpline</div>
+        <div style="color:#eef2e6; font-size:0.95rem;">Toll-free <b>155261</b> / <b>1800-115-526</b> &nbsp;|&nbsp; ☎️ 011-24300606</div>
     </div>
 """, unsafe_allow_html=True)
 st.caption("Numbers verified from official Government of India sources. Production version will link directly to the nearest Maharashtra Krishi Vibhag extension officer by location.")
@@ -395,12 +428,14 @@ st.write("This prototype currently detects diseases in **tomato, potato, and bel
 
 r1, r2, r3, r4 = st.columns(4)
 with r1:
-    st.markdown('<div class="roadmap-chip chip-1">🌾 <b>Jowar</b><br><span style="font-size:0.85rem;">Grain mold, downy mildew</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="roadmap-chip">🌾 <b>Jowar</b><br><span style="font-size:0.85rem;">Grain mold, downy mildew</span></div>', unsafe_allow_html=True)
 with r2:
-    st.markdown('<div class="roadmap-chip chip-2">🌾 <b>Rice</b><br><span style="font-size:0.85rem;">Blast, bacterial blight</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="roadmap-chip">🌾 <b>Rice</b><br><span style="font-size:0.85rem;">Blast, bacterial blight</span></div>', unsafe_allow_html=True)
 with r3:
-    st.markdown('<div class="roadmap-chip chip-3">🌿 <b>Cotton</b><br><span style="font-size:0.85rem;">Pink bollworm, leaf curl</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="roadmap-chip">🌿 <b>Cotton</b><br><span style="font-size:0.85rem;">Pink bollworm, leaf curl</span></div>', unsafe_allow_html=True)
 with r4:
-    st.markdown('<div class="roadmap-chip chip-4">🎋 <b>Sugarcane</b><br><span style="font-size:0.85rem;">Red rot, smut</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="roadmap-chip">🎋 <b>Sugarcane</b><br><span style="font-size:0.85rem;">Red rot, smut</span></div>', unsafe_allow_html=True)
 
 st.markdown('<p class="footer-note">Prototype for SIH 2026 · Problem Statement SIH26131 · Government of Maharashtra</p>', unsafe_allow_html=True)
+PYEOF
+python3 -c "import ast; ast.parse(open('/mnt/user-data/outputs/app.py').read());
