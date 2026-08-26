@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from textwrap import dedent
 
 import numpy as np
 import streamlit as st
@@ -76,7 +77,6 @@ st.markdown(
 
         padding: 2.8rem 3rem;
         border-radius: 26px;
-
         margin-bottom: 1.8rem;
 
         box-shadow:
@@ -108,6 +108,7 @@ st.markdown(
         font-size: 1.08rem;
         color: #dce9df !important;
         max-width: 700px;
+        line-height: 1.6;
         position: relative;
         z-index: 2;
     }
@@ -138,7 +139,6 @@ st.markdown(
     .section-header {
         font-size: 1.45rem;
         font-weight: 800;
-
         color: #173d2b !important;
 
         margin-top: 2.2rem;
@@ -154,7 +154,6 @@ st.markdown(
         background: #ffffff;
 
         border: 1px solid #e1e8df;
-
         border-radius: 18px;
 
         padding: 1.25rem;
@@ -171,7 +170,6 @@ st.markdown(
         color: #17633b !important;
 
         font-size: 1.8rem;
-
         font-weight: 850;
     }
 
@@ -179,7 +177,6 @@ st.markdown(
         color: #68746b !important;
 
         font-size: 0.82rem;
-
         margin-top: 4px;
     }
 
@@ -192,12 +189,11 @@ st.markdown(
         background: #ffffff;
 
         border: 1px solid #e1e8df;
-
         border-radius: 18px;
 
         padding: 1.35rem 1.2rem;
 
-        min-height: 150px;
+        min-height: 155px;
 
         text-align: center;
 
@@ -213,6 +209,7 @@ st.markdown(
     .step-card span {
         color: #66736a !important;
         font-size: 0.86rem;
+        line-height: 1.5;
     }
 
     .step-num {
@@ -235,14 +232,26 @@ st.markdown(
 
 
     /* =====================================================
-       UPLOAD
+       SCANNER
        ===================================================== */
+
+    .scanner-panel {
+        background: #ffffff;
+
+        border: 1px solid #dfe7df;
+
+        border-radius: 22px;
+
+        padding: 1.5rem;
+
+        box-shadow:
+            0 7px 24px rgba(35, 63, 45, 0.07);
+    }
 
     .upload-panel-label {
         color: #173d2b !important;
 
         font-size: 1rem;
-
         font-weight: 750;
 
         margin-bottom: 0.7rem;
@@ -335,11 +344,17 @@ st.markdown(
         font-weight: 850;
 
         margin-top: 7px;
+        margin-bottom: 8px;
+    }
+
+    .result-icon {
+        font-size: 2.4rem;
+        margin-bottom: 4px;
     }
 
 
     /* =====================================================
-       CONFIDENCE BAR
+       CONFIDENCE
        ===================================================== */
 
     .confidence-bg {
@@ -354,12 +369,40 @@ st.markdown(
         overflow: hidden;
 
         margin-top: 8px;
+        margin-bottom: 8px;
     }
 
     .confidence-fill {
         height: 12px;
 
         border-radius: 20px;
+    }
+
+    .confidence-text {
+        color: #66736a !important;
+
+        font-size: 0.85rem;
+
+        font-weight: 700;
+    }
+
+
+    /* =====================================================
+       SEVERITY
+       ===================================================== */
+
+    .severity-badge {
+        display: inline-block;
+
+        padding: 7px 14px;
+
+        border-radius: 30px;
+
+        font-size: 0.78rem;
+
+        font-weight: 800;
+
+        margin-top: 8px;
     }
 
 
@@ -461,12 +504,14 @@ st.markdown(
         color: #17633b !important;
 
         font-weight: 800;
+        font-size: 1.05rem;
     }
 
     .helpline-text {
         color: #536057 !important;
 
         font-size: 0.92rem;
+        line-height: 1.6;
     }
 
 
@@ -499,6 +544,7 @@ st.markdown(
         color: #68746b !important;
 
         font-size: 0.82rem;
+        line-height: 1.5;
     }
 
 
@@ -720,9 +766,8 @@ def load_my_model():
         with open(
             CLASS_NAMES_PATH,
             "r",
-            encoding="utf-8"
+            encoding="utf-8",
         ) as file:
-
             class_names = json.load(file)
 
         if isinstance(class_names, dict):
@@ -751,29 +796,81 @@ def load_my_model():
 
 
 # =========================================================
+# PREDICTION FUNCTION
+# =========================================================
+
+def predict_disease(model, image):
+
+    image = image.convert("RGB")
+
+    image = image.resize((224, 224))
+
+    image_array = np.asarray(image).astype("float32")
+
+    image_array = image_array / 255.0
+
+    image_array = np.expand_dims(image_array, axis=0)
+
+    prediction = model.predict(
+        image_array,
+        verbose=0,
+    )
+
+    prediction = np.asarray(prediction)
+
+    # Handle binary-output models
+    if prediction.ndim == 2 and prediction.shape[1] == 1:
+
+        probability = float(prediction[0][0])
+
+        if probability >= 0.5:
+            class_index = 1
+            confidence = probability
+        else:
+            class_index = 0
+            confidence = 1.0 - probability
+
+    else:
+
+        probabilities = prediction[0]
+
+        class_index = int(
+            np.argmax(probabilities)
+        )
+
+        confidence = float(
+            probabilities[class_index]
+        )
+
+    return class_index, confidence
+
+
+# =========================================================
 # HERO
 # =========================================================
 
 st.markdown(
-    """
-    <div class="hero">
+    dedent(
+        """
+        <div class="hero">
 
-        <div class="hero-title">
-            🌾 KrishiRakshak AI
+            <div class="hero-title">
+                🌾 KrishiRakshak AI
+            </div>
+
+            <div class="hero-sub">
+                AI-powered crop disease detection from a single
+                leaf image — enabling faster and smarter
+                agricultural decision-making.
+            </div>
+
+            <div class="hero-badge">
+                SIH 2026 · SIH26131 · Government of Maharashtra
+            </div>
+
         </div>
-
-        <div class="hero-sub">
-            AI-powered crop disease detection from a single
-            leaf image — enabling faster and smarter
-            agricultural decision-making.
-        </div>
-
-        <div class="hero-badge">
-            SIH 2026 · SIH26131 · Government of Maharashtra
-        </div>
-
-    </div>
-    """,
+        """
+    ),
     unsafe_allow_html=True,
 )
 
@@ -809,14 +906,16 @@ s1, s2, s3, s4 = st.columns(4)
 with s1:
 
     st.markdown(
-        """
-        <div class="stat-card">
-            <div class="stat-num">4</div>
-            <div class="stat-label">
-                Disease Classes
+        dedent(
+            """
+            <div class="stat-card">
+                <div class="stat-num">4</div>
+                <div class="stat-label">
+                    Disease Classes
+                </div>
             </div>
-        </div>
-        """,
+            """
+        ),
         unsafe_allow_html=True,
     )
 
@@ -824,814 +923,8 @@ with s1:
 with s2:
 
     st.markdown(
-        """
-        <div class="stat-card">
-            <div class="stat-num">AI</div>
-            <div class="stat-label">
-                Image-Based Detection
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-with s3:
-
-    st.markdown(
-        """
-        <div class="stat-card">
-            <div class="stat-num">4</div>
-            <div class="stat-label">
-                Languages
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-with s4:
-
-    st.markdown(
-        """
-        <div class="stat-card">
-            <div class="stat-num">224×224</div>
-            <div class="stat-label">
-                Image Input
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-# =========================================================
-# HOW IT WORKS
-# =========================================================
-
-st.markdown(
-    '<div class="section-header">⚡ How it works</div>',
-    unsafe_allow_html=True,
-)
-
-h1, h2, h3 = st.columns(3)
-
-
-with h1:
-
-    st.markdown(
-        """
-        <div class="step-card">
-
-            <div class="step-num">1</div>
-
-            <b>📷 Upload a Leaf</b>
-
-            <br><br>
-
-            <span>
-                Upload a clear image of the
-                affected crop leaf.
-            </span>
-
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-with h2:
-
-    st.markdown(
-        """
-        <div class="step-card">
-
-            <div class="step-num">2</div>
-
-            <b>🧠 AI Analysis</b>
-
-            <br><br>
-
-            <span>
-                The trained AI model analyzes
-                the image and predicts the condition.
-            </span>
-
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-with h3:
-
-    st.markdown(
-        """
-        <div class="step-card">
-
-            <div class="step-num">3</div>
-
-            <b>🗣️ Get Guidance</b>
-
-            <br><br>
-
-            <span>
-                Receive disease information and
-                treatment guidance in your language.
-            </span>
-
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-# =========================================================
-# SCANNER
-# =========================================================
-
-st.markdown(
-    '<div class="section-header">📸 Scan a Crop Leaf</div>',
-    unsafe_allow_html=True,
-)
-
-col_upload, col_result = st.columns(
-    [1, 1.2],
-    gap="large",
-)
-
-
-# =========================================================
-# UPLOAD COLUMN
-# =========================================================
-
-with col_upload:
-
-    st.markdown(
-        """
-        <div class="upload-panel-label">
-            Upload a clear crop leaf image
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    uploaded = st.file_uploader(
-        "Upload crop leaf image",
-        type=[
-            "jpg",
-            "jpeg",
-            "png"
-        ],
-        label_visibility="collapsed",
-    )
-
-    img = None
-
-    if uploaded is not None:
-
-        try:
-
-            img = Image.open(uploaded).convert("RGB")
-
-            st.image(
-                img,
-                caption="Uploaded crop image",
-                use_container_width=True,
-            )
-
-        except Exception:
-
-            st.error(
-                "The uploaded file could not be read."
-            )
-
-
-# =========================================================
-# RESULT COLUMN
-# =========================================================
-
-with col_result:
-
-    if img is None:
-
-        st.markdown(
+        dedent(
             """
-            <div class="result-card">
-
-                <div
-                    style="
-                        text-align:center;
-                        padding:3rem 1rem;
-                    "
-                >
-
-                    <div
-                        style="
-                            font-size:3.5rem;
-                        "
-                    >
-                        🌱
-                    </div>
-
-                    <div
-                        style="
-                            color:#173d2b;
-                            font-size:1.1rem;
-                            font-weight:750;
-                            margin-top:10px;
-                        "
-                    >
-                        Your AI result will appear here
-                    </div>
-
-                    <div
-                        style="
-                            color:#718078;
-                            margin-top:7px;
-                            font-size:0.9rem;
-                        "
-                    >
-                        Upload a crop leaf image
-                        to begin detection.
-                    </div>
-
-                </div>
-
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    else:
-
-        try:
-
-            # -------------------------------------------------
-            # IMAGE PREPROCESSING
-            # -------------------------------------------------
-
-            resized_image = img.resize(
-                (224, 224),
-                Image.Resampling.LANCZOS,
-            )
-
-            image_array = np.asarray(
-                resized_image,
-                dtype=np.float32,
-            )
-
-            image_array = image_array / 255.0
-
-            image_array = np.expand_dims(
-                image_array,
-                axis=0,
-            )
-
-
-            # -------------------------------------------------
-            # PREDICTION
-            # -------------------------------------------------
-
-            prediction = model.predict(
-                image_array,
-                verbose=0,
-            )
-
-            prediction = np.asarray(prediction)
-
-            if prediction.ndim == 2:
-                prediction = prediction[0]
-
-            if prediction.ndim != 1:
-                raise ValueError(
-                    "Unexpected model output shape."
-                )
-
-            predicted_index = int(
-                np.argmax(prediction)
-            )
-
-            confidence = float(
-                np.max(prediction)
-            ) * 100.0
-
-
-            # -------------------------------------------------
-            # CLASS CHECK
-            # -------------------------------------------------
-
-            if predicted_index >= len(class_names):
-
-                raise ValueError(
-                    "The number of model outputs does not "
-                    "match class_names.json."
-                )
-
-            result = class_names[predicted_index]
-
-
-            # -------------------------------------------------
-            # DISEASE INFORMATION
-            # -------------------------------------------------
-
-            info = DISEASE_INFO.get(
-                result,
-                {
-                    "display": str(result).replace(
-                        "_",
-                        " "
-                    ),
-
-                    "icon": "🌿",
-
-                    "treatment_en": (
-                        "The model detected this condition. "
-                        "Please consult a local agriculture "
-                        "expert for confirmation and treatment."
-                    ),
-
-                    "treatment_hi": (
-                        "मॉडल ने इस स्थिति का पता लगाया है। "
-                        "पुष्टि और उपचार के लिए स्थानीय कृषि "
-                        "विशेषज्ञ से सलाह लें।"
-                    ),
-
-                    "treatment_mr": (
-                        "मॉडेलने ही स्थिती शोधली आहे. "
-                        "पुष्टी आणि उपचारासाठी स्थानिक कृषी "
-                        "तज्ञांचा सल्ला घ्या."
-                    ),
-
-                    "treatment_kn": (
-                        "ಮಾದರಿಯು ಈ ಸ್ಥಿತಿಯನ್ನು ಪತ್ತೆಹಚ್ಚಿದೆ. "
-                        "ದೃಢೀಕರಣ ಮತ್ತು ಚಿಕಿತ್ಸೆಗೆ ಸ್ಥಳೀಯ ಕೃಷಿ "
-                        "ತಜ್ಞರನ್ನು ಸಂಪರ್ಕಿಸಿ."
-                    ),
-
-                    "severity": "moderate",
-                },
-            )
-
-
-            severity = info.get(
-                "severity",
-                "moderate"
-            )
-
-            severity_color = SEVERITY_COLORS.get(
-                severity,
-                "#d49b16"
-            )
-
-            severity_label = SEVERITY_LABELS.get(
-                severity,
-                "Detected"
-            )
-
-
-            # -------------------------------------------------
-            # RESULT CARD
-            # -------------------------------------------------
-
-            st.markdown(
-                f"""
-                <div
-                    class="result-card"
-                    style="
-                        border-top:
-                        5px solid {severity_color};
-                    "
-                >
-
-                    <div class="result-label">
-                        AI Detection Result
-                    </div>
-
-                    <div class="result-name">
-                        {info["icon"]}
-                        {info["display"]}
-                    </div>
-
-                    <div
-                        style="
-                            color:{severity_color};
-                            font-weight:800;
-                            margin-top:12px;
-                        "
-                    >
-                        ● {severity_label}
-                    </div>
-
-                    <div
-                        style="
-                            color:#59665d;
-                            margin-top:16px;
-                            font-size:0.9rem;
-                        "
-                    >
-                        Model Confidence:
-                        <strong>
-                            {confidence:.1f}%
-                        </strong>
-                    </div>
-
-                    <div class="confidence-bg">
-
-                        <div
-                            class="confidence-fill"
-                            style="
-                                width:
-                                {min(confidence, 100):.1f}%;
-
-                                background:
-                                {severity_color};
-                            "
-                        >
-                        </div>
-
-                    </div>
-
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-
-            # -------------------------------------------------
-            # LANGUAGE SELECTION
-            # -------------------------------------------------
-
-            lang_choice = st.selectbox(
-                "🌐 Select language for guidance",
-                list(LANGUAGES.keys()),
-            )
-
-            treatment_key = LANGUAGES[
-                lang_choice
-            ]
-
-            treatment_text = info.get(
-                treatment_key,
-                info["treatment_en"],
-            )
-
-
-            # -------------------------------------------------
-            # TREATMENT
-            # -------------------------------------------------
-
-            st.markdown(
-                f"""
-                <div class="treatment-box">
-
-                    <div class="treatment-title">
-                        💊 Recommended Action
-                    </div>
-
-                    <div class="treatment-text">
-                        {treatment_text}
-                    </div>
-
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-
-            # -------------------------------------------------
-            # VOICE GUIDANCE
-            # -------------------------------------------------
-
-            if st.button(
-                "🔊 Play Voice Advice",
-                use_container_width=True,
-            ):
-
-                try:
-
-                    from gtts import gTTS
-
-                    language_codes = {
-                        "English": "en",
-                        "हिंदी (Hindi)": "hi",
-                        "मराठी (Marathi)": "mr",
-                        "ಕನ್ನಡ (Kannada)": "kn",
-                    }
-
-                    lang_code = language_codes[
-                        lang_choice
-                    ]
-
-                    audio_file = BASE_DIR / "output.mp3"
-
-                    tts = gTTS(
-                        text=(
-                            f"{info['display']}. "
-                            f"{treatment_text}"
-                        ),
-                        lang=lang_code,
-                    )
-
-                    tts.save(audio_file)
-
-                    with open(
-                        audio_file,
-                        "rb"
-                    ) as audio:
-
-                        st.audio(
-                            audio.read(),
-                            format="audio/mp3",
-                        )
-
-                except Exception as error:
-
-                    st.warning(
-                        "Voice generation is unavailable "
-                        "in the current deployment."
-                    )
-
-                    st.caption(
-                        str(error)
-                    )
-
-
-        except Exception as error:
-
-            st.error(
-                "⚠️ Prediction failed."
-            )
-
-            st.code(
-                str(error)
-            )
-
-
-# =========================================================
-# FARMER SUPPORT
-# =========================================================
-
-st.markdown(
-    '<div class="section-header">📞 Farmer Support</div>',
-    unsafe_allow_html=True,
-)
-
-st.markdown(
-    """
-    <div class="helpline-card">
-
-        <div class="helpline-title">
-            📱 Kisan Call Centre
-        </div>
-
-        <div class="helpline-text">
-            Government of India farmer helpline
-        </div>
-
-        <div
-            style="
-                color:#173d2b;
-                font-size:1.2rem;
-                font-weight:800;
-                margin-top:7px;
-            "
-        >
-            1800-180-1551
-        </div>
-
-        <div class="helpline-text">
-            Available in multiple Indian languages.
-        </div>
-
-        <hr>
-
-        <div class="helpline-title">
-            📱 PM-KISAN Helpline
-        </div>
-
-        <div class="helpline-text">
-
-            155261 / 1800-115-526
-
-            &nbsp;&nbsp;|&nbsp;&nbsp;
-
-            011-24300606
-
-        </div>
-
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-
-# =========================================================
-# FUTURE EXPANSION
-# =========================================================
-
-st.markdown(
-    '<div class="section-header">🌱 Future Expansion</div>',
-    unsafe_allow_html=True,
-)
-
-st.write(
-    "The current prototype focuses on selected crop disease "
-    "classes. The platform can be expanded to Maharashtra's "
-    "major agricultural crops."
-)
-
-
-r1, r2, r3, r4 = st.columns(4)
-
-
-with r1:
-
-    st.markdown(
-        """
-        <div class="roadmap-card">
-
-            <div class="roadmap-title">
-                🌾 Jowar
-            </div>
-
-            <div class="roadmap-text">
-                Grain mold<br>
-                Downy mildew
-            </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-with r2:
-
-    st.markdown(
-        """
-        <div class="roadmap-card">
-
-            <div class="roadmap-title">
-                🌾 Rice
-            </div>
-
-            <div class="roadmap-text">
-                Blast<br>
-                Bacterial blight
-            </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-with r3:
-
-    st.markdown(
-        """
-        <div class="roadmap-card">
-
-            <div class="roadmap-title">
-                🌿 Cotton
-            </div>
-
-            <div class="roadmap-text">
-                Pink bollworm<br>
-                Leaf curl
-            </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-with r4:
-
-    st.markdown(
-        """
-        <div class="roadmap-card">
-
-            <div class="roadmap-title">
-                🎋 Sugarcane
-            </div>
-
-            <div class="roadmap-text">
-                Red rot<br>
-                Smut
-            </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-# =========================================================
-# SIH VALUE PROPOSITION
-# =========================================================
-
-st.markdown(
-    '<div class="section-header">🚀 Why KrishiRakshak AI?</div>',
-    unsafe_allow_html=True,
-)
-
-v1, v2, v3 = st.columns(3)
-
-
-with v1:
-
-    st.markdown(
-        """
-        <div class="step-card">
-
-            <div style="font-size:2rem;">
-                📱
-            </div>
-
-            <b>Accessible</b>
-
-            <br><br>
-
-            <span>
-                Simple image-based interaction
-                designed for farmers.
-            </span>
-
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-with v2:
-
-    st.markdown(
-        """
-        <div class="step-card">
-
-            <div style="font-size:2rem;">
-                🌐
-            </div>
-
-            <b>Multilingual</b>
-
-            <br><br>
-
-            <span>
-                Guidance can be presented
-                in multiple Indian languages.
-            </span>
-
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-with v3:
-
-    st.markdown(
-        """
-        <div class="step-card">
-
-            <div style="font-size:2rem;">
-                🧠
-            </div>
-
-            <b>AI-Powered</b>
-
-            <br><br>
-
-            <span>
-                Machine learning enables
-                rapid preliminary disease detection.
-            </span>
-
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-# =========================================================
-# FOOTER
-# =========================================================
-
-st.markdown(
-    """
-    <div class="footer-note">
-
-        KrishiRakshak AI · SIH 2026 · Problem Statement SIH26131
-
-        <br>
-
-        AI-assisted crop disease detection prototype
-
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+            <div class="stat-card">
+                <div class="stat-num">AI</div>
+                <div class="stat-label">
