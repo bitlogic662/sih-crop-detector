@@ -1,5 +1,5 @@
-streamlit
-tensorflow
-pillow
-gtts
-numpy
+streamlit==1.38.0
+tensorflow-cpu==2.17.0
+pillow==10.4.0
+gtts==2.5.3
+numpy==1.26.4
