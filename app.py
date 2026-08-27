@@ -6,9 +6,12 @@ import json
 
 st.set_page_config(
     page_title="KrishiRakshak AI - Crop Disease Detection",
-    page_icon="🌾",
+    page_icon="ðŸŒ¾",
     layout="wide"
 )
+
+# Confidence below this = "not a leaf we recognize" instead of a forced guess
+CONFIDENCE_THRESHOLD = 65.0  # percent, tune this against your validation set
 
 # ---------- Custom styling ----------
 st.markdown("""
@@ -32,7 +35,7 @@ st.markdown("""
         overflow: hidden;
     }
     .hero::after {
-        content: "🌾";
+        content: "ðŸŒ¾";
         position: absolute;
         right: -10px;
         top: -30px;
@@ -92,7 +95,6 @@ st.markdown("""
         margin-bottom: 0.6rem;
     }
 
-    /* Style Streamlit's ACTUAL dropzone so the whole visible box is the real drop target */
     div[data-testid="stFileUploaderDropzone"] {
         border: 2.5px dashed rgba(242,199,68,0.55) !important;
         border-radius: 20px !important;
@@ -173,6 +175,13 @@ st.markdown("""
         margin-top: 1.2rem;
         border: 1px solid rgba(242,199,68,0.35);
     }
+    .error-box {
+        background: rgba(224,102,90,0.12);
+        border-radius: 18px;
+        padding: 1.4rem 1.6rem;
+        margin-top: 0.4rem;
+        border: 1px solid rgba(224,102,90,0.45);
+    }
     .section-header {
         font-size: 1.35rem;
         font-weight: 800;
@@ -225,7 +234,6 @@ st.markdown("""
         border-top: 1px solid rgba(255,255,255,0.10);
     }
 
-    /* Streamlit native widgets */
     div[data-testid="stSelectbox"] > div {
         background: rgba(255,255,255,0.08) !important;
         border-radius: 14px !important;
@@ -246,7 +254,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ---------- Load model ----------
+# ---------- Load model (fully local, no network calls) ----------
 @st.cache_resource
 def load_my_model():
     model = load_model("crop_model.h5")
@@ -259,9 +267,9 @@ model, class_names = load_my_model()
 # ---------- Hero ----------
 st.markdown("""
     <div class="hero">
-        <div class="hero-title">🌾 KrishiRakshak AI</div>
+        <div class="hero-title">ðŸŒ¾ KrishiRakshak AI</div>
         <div class="hero-sub">Early Detection & Management of Crop Diseases and Pest Infestations</div>
-        <div class="hero-badge">🏛️ Government of Maharashtra · SIH 2026 · SIH26131</div>
+        <div class="hero-badge">ðŸ›ï¸ Government of Maharashtra Â· SIH 2026 Â· SIH26131</div>
     </div>
 """, unsafe_allow_html=True)
 
@@ -279,62 +287,69 @@ with s4:
 st.write("")
 
 # ---------- How it works ----------
-st.markdown('<div class="section-header">⚡ How it works</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-header">âš¡ How it works</div>', unsafe_allow_html=True)
 h1, h2, h3 = st.columns(3)
 with h1:
-    st.markdown('<div class="step-card"><div class="step-num">1</div><b>📷 Snap a photo</b><br><span style="opacity:0.85; font-size:0.85rem;">Take a clear photo of the affected leaf</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="step-card"><div class="step-num">1</div><b>ðŸ“· Snap a photo</b><br><span style="opacity:0.85; font-size:0.85rem;">Take a clear photo of the affected leaf</span></div>', unsafe_allow_html=True)
 with h2:
-    st.markdown('<div class="step-card"><div class="step-num">2</div><b>🧠 AI analyzes</b><br><span style="opacity:0.85; font-size:0.85rem;">On-device model detects disease instantly</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="step-card"><div class="step-num">2</div><b>ðŸ§  AI analyzes</b><br><span style="opacity:0.85; font-size:0.85rem;">On-device model detects disease instantly</span></div>', unsafe_allow_html=True)
 with h3:
-    st.markdown('<div class="step-card"><div class="step-num">3</div><b>🗣️ Get advice</b><br><span style="opacity:0.85; font-size:0.85rem;">Hear treatment steps in your language</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="step-card"><div class="step-num">3</div><b>ðŸ—£ï¸ Get advice</b><br><span style="opacity:0.85; font-size:0.85rem;">Hear treatment steps in your language</span></div>', unsafe_allow_html=True)
 
 st.write("")
 
 # ---------- Disease info ----------
 disease_info = {
     "Pepper__bell___Bacterial_spot": {
-        "display": "Bell Pepper — Bacterial Spot",
-        "icon": "🫑",
+        "display": "Bell Pepper â€” Bacterial Spot",
+        "icon": "ðŸ«‘",
         "treatment_en": "Apply copper-based bactericide. Avoid overhead watering and remove infected leaves.",
-        "treatment_hi": "कॉपर आधारित बैक्टीरिसाइड का प्रयोग करें। ऊपर से पानी देने से बचें और संक्रमित पत्तियों को हटा दें।",
-        "treatment_mr": "तांबेयुक्त बॅक्टेरिसाइड वापरा. वरून पाणी देणे टाळा आणि संक्रमित पाने काढून टाका.",
-        "treatment_kn": "ತಾಮ್ರ ಆಧಾರಿತ ಬ್ಯಾಕ್ಟೀರಿಸೈಡ್ ಅನ್ನು ಬಳಸಿ. ಮೇಲಿನಿಂದ ನೀರುಣಿಸುವುದನ್ನು ತಪ್ಪಿಸಿ ಮತ್ತು ಸೋಂಕಿತ ಎಲೆಗಳನ್ನು ತೆಗೆದುಹಾಕಿ.",
+        "treatment_hi": "à¤•à¥‰à¤ªà¤° à¤†à¤§à¤¾à¤°à¤¿à¤¤ à¤¬à¥ˆà¤•à¥à¤Ÿà¥€à¤°à¤¿à¤¸à¤¾à¤‡à¤¡ à¤•à¤¾ à¤ªà¥à¤°à¤¯à¥‹à¤— à¤•à¤°à¥‡à¤‚à¥¤ à¤Šà¤ªà¤° à¤¸à¥‡ à¤ªà¤¾à¤¨à¥€ à¤¦à¥‡à¤¨à¥‡ à¤¸à¥‡ à¤¬à¤šà¥‡à¤‚ à¤”à¤° à¤¸à¤‚à¤•à¥à¤°à¤®à¤¿à¤¤ à¤ªà¤¤à¥à¤¤à¤¿à¤¯à¥‹à¤‚ à¤•à¥‹ à¤¹à¤Ÿà¤¾ à¤¦à¥‡à¤‚à¥¤",
+        "treatment_mr": "à¤¤à¤¾à¤‚à¤¬à¥‡à¤¯à¥à¤•à¥à¤¤ à¤¬à¥…à¤•à¥à¤Ÿà¥‡à¤°à¤¿à¤¸à¤¾à¤‡à¤¡ à¤µà¤¾à¤ªà¤°à¤¾. à¤µà¤°à¥‚à¤¨ à¤ªà¤¾à¤£à¥€ à¤¦à¥‡à¤£à¥‡ à¤Ÿà¤¾à¤³à¤¾ à¤†à¤£à¤¿ à¤¸à¤‚à¤•à¥à¤°à¤®à¤¿à¤¤ à¤ªà¤¾à¤¨à¥‡ à¤•à¤¾à¤¢à¥‚à¤¨ à¤Ÿà¤¾à¤•à¤¾.",
+        "treatment_kn": "à²¤à²¾à²®à³à²° à²†à²§à²¾à²°à²¿à²¤ à²¬à³à²¯à²¾à²•à³à²Ÿà³€à²°à²¿à²¸à³ˆà²¡à³ à²…à²¨à³à²¨à³ à²¬à²³à²¸à²¿. à²®à³‡à²²à²¿à²¨à²¿à²‚à²¦ à²¨à³€à²°à³à²£à²¿à²¸à³à²µà³à²¦à²¨à³à²¨à³ à²¤à²ªà³à²ªà²¿à²¸à²¿ à²®à²¤à³à²¤à³ à²¸à³‹à²‚à²•à²¿à²¤ à²Žà²²à³†à²—à²³à²¨à³à²¨à³ à²¤à³†à²—à³†à²¦à³à²¹à²¾à²•à²¿.",
         "severity": "moderate"
     },
     "Potato___Early_blight": {
-        "display": "Potato — Early Blight",
-        "icon": "🥔",
+        "display": "Potato â€” Early Blight",
+        "icon": "ðŸ¥”",
         "treatment_en": "Apply fungicide (Chlorothalonil or Mancozeb). Rotate crops and remove infected debris.",
-        "treatment_hi": "फफूंदनाशक (क्लोरोथालोनिल या मैंकोजेब) का प्रयोग करें। फसल चक्र अपनाएं और संक्रमित अवशेष हटा दें।",
-        "treatment_mr": "बुरशीनाशक (क्लोरोथॅलोनिल किंवा मॅन्कोझेब) वापरा. पीक फेरपालट करा आणि संक्रमित अवशेष काढून टाका.",
-        "treatment_kn": "ಶಿಲೀಂಧ್ರನಾಶಕ (ಕ್ಲೋರೋಥಲೋನಿಲ್ ಅಥವಾ ಮ್ಯಾಂಕೋಜೆಬ್) ಬಳಸಿ. ಬೆಳೆ ಸರದಿ ಅನುಸರಿಸಿ ಮತ್ತು ಸೋಂಕಿತ ಅವಶೇಷಗಳನ್ನು ತೆಗೆದುಹಾಕಿ.",
+        "treatment_hi": "à¤«à¤«à¥‚à¤‚à¤¦à¤¨à¤¾à¤¶à¤• (à¤•à¥à¤²à¥‹à¤°à¥‹à¤¥à¤¾à¤²à¥‹à¤¨à¤¿à¤² à¤¯à¤¾ à¤®à¥ˆà¤‚à¤•à¥‹à¤œà¥‡à¤¬) à¤•à¤¾ à¤ªà¥à¤°à¤¯à¥‹à¤— à¤•à¤°à¥‡à¤‚à¥¤ à¤«à¤¸à¤² à¤šà¤•à¥à¤° à¤…à¤ªà¤¨à¤¾à¤à¤‚ à¤”à¤° à¤¸à¤‚à¤•à¥à¤°à¤®à¤¿à¤¤ à¤…à¤µà¤¶à¥‡à¤· à¤¹à¤Ÿà¤¾ à¤¦à¥‡à¤‚à¥¤",
+        "treatment_mr": "à¤¬à¥à¤°à¤¶à¥€à¤¨à¤¾à¤¶à¤• (à¤•à¥à¤²à¥‹à¤°à¥‹à¤¥à¥…à¤²à¥‹à¤¨à¤¿à¤² à¤•à¤¿à¤‚à¤µà¤¾ à¤®à¥…à¤¨à¥à¤•à¥‹à¤à¥‡à¤¬) à¤µà¤¾à¤ªà¤°à¤¾. à¤ªà¥€à¤• à¤«à¥‡à¤°à¤ªà¤¾à¤²à¤Ÿ à¤•à¤°à¤¾ à¤†à¤£à¤¿ à¤¸à¤‚à¤•à¥à¤°à¤®à¤¿à¤¤ à¤…à¤µà¤¶à¥‡à¤· à¤•à¤¾à¤¢à¥‚à¤¨ à¤Ÿà¤¾à¤•à¤¾.",
+        "treatment_kn": "à²¶à²¿à²²à³€à²‚à²§à³à²°à²¨à²¾à²¶à²• (à²•à³à²²à³‹à²°à³‹à²¥à²²à³‹à²¨à²¿à²²à³ à²…à²¥à²µà²¾ à²®à³à²¯à²¾à²‚à²•à³‹à²œà³†à²¬à³) à²¬à²³à²¸à²¿. à²¬à³†à²³à³† à²¸à²°à²¦à²¿ à²…à²¨à³à²¸à²°à²¿à²¸à²¿ à²®à²¤à³à²¤à³ à²¸à³‹à²‚à²•à²¿à²¤ à²…à²µà²¶à³‡à²·à²—à²³à²¨à³à²¨à³ à²¤à³†à²—à³†à²¦à³à²¹à²¾à²•à²¿.",
         "severity": "moderate"
     },
     "Tomato_Late_blight": {
-        "display": "Tomato — Late Blight",
-        "icon": "🍅",
+        "display": "Tomato â€” Late Blight",
+        "icon": "ðŸ…",
         "treatment_en": "Apply copper-based fungicide immediately. Remove and destroy infected plants to prevent spread.",
-        "treatment_hi": "तुरंत कॉपर आधारित फफूंदनाशक का प्रयोग करें। फैलाव रोकने के लिए संक्रमित पौधों को हटाकर नष्ट कर दें।",
-        "treatment_mr": "त्वरित तांबेयुक्त बुरशीनाशक वापरा. प्रसार रोखण्यासाठी संक्रमित रोपे काढून नष्ट करा.",
-        "treatment_kn": "ತಕ್ಷಣ ತಾಮ್ರ ಆಧಾರಿತ ಶಿಲೀಂಧ್ರನಾಶಕವನ್ನು ಬಳಸಿ. ಹರಡುವಿಕೆಯನ್ನು ತಡೆಯಲು ಸೋಂಕಿತ ಸಸ್ಯಗಳನ್ನು ತೆಗೆದು ನಾಶಪಡಿಸಿ.",
+        "treatment_hi": "à¤¤à¥à¤°à¤‚à¤¤ à¤•à¥‰à¤ªà¤° à¤†à¤§à¤¾à¤°à¤¿à¤¤ à¤«à¤«à¥‚à¤‚à¤¦à¤¨à¤¾à¤¶à¤• à¤•à¤¾ à¤ªà¥à¤°à¤¯à¥‹à¤— à¤•à¤°à¥‡à¤‚à¥¤ à¤«à¥ˆà¤²à¤¾à¤µ à¤°à¥‹à¤•à¤¨à¥‡ à¤•à¥‡ à¤²à¤¿à¤ à¤¸à¤‚à¤•à¥à¤°à¤®à¤¿à¤¤ à¤ªà¥Œà¤§à¥‹à¤‚ à¤•à¥‹ à¤¹à¤Ÿà¤¾à¤•à¤° à¤¨à¤·à¥à¤Ÿ à¤•à¤° à¤¦à¥‡à¤‚à¥¤",
+        "treatment_mr": "à¤¤à¥à¤µà¤°à¤¿à¤¤ à¤¤à¤¾à¤‚à¤¬à¥‡à¤¯à¥à¤•à¥à¤¤ à¤¬à¥à¤°à¤¶à¥€à¤¨à¤¾à¤¶à¤• à¤µà¤¾à¤ªà¤°à¤¾. à¤ªà¥à¤°à¤¸à¤¾à¤° à¤°à¥‹à¤–à¤£à¥à¤¯à¤¾à¤¸à¤¾à¤ à¥€ à¤¸à¤‚à¤•à¥à¤°à¤®à¤¿à¤¤ à¤°à¥‹à¤ªà¥‡ à¤•à¤¾à¤¢à¥‚à¤¨ à¤¨à¤·à¥à¤Ÿ à¤•à¤°à¤¾.",
+        "treatment_kn": "à²¤à²•à³à²·à²£ à²¤à²¾à²®à³à²° à²†à²§à²¾à²°à²¿à²¤ à²¶à²¿à²²à³€à²‚à²§à³à²°à²¨à²¾à²¶à²•à²µà²¨à³à²¨à³ à²¬à²³à²¸à²¿. à²¹à²°à²¡à³à²µà²¿à²•à³†à²¯à²¨à³à²¨à³ à²¤à²¡à³†à²¯à²²à³ à²¸à³‹à²‚à²•à²¿à²¤ à²¸à²¸à³à²¯à²—à²³à²¨à³à²¨à³ à²¤à³†à²—à³†à²¦à³ à²¨à²¾à²¶à²ªà²¡à²¿à²¸à²¿.",
         "severity": "severe"
     },
     "Tomato_healthy": {
-        "display": "Tomato — Healthy",
-        "icon": "✅",
+        "display": "Tomato â€” Healthy",
+        "icon": "âœ…",
         "treatment_en": "No disease detected. Continue regular monitoring and good field hygiene.",
-        "treatment_hi": "कोई रोग नहीं पाया गया। नियमित निगरानी और अच्छी खेत स्वच्छता जारी रखें।",
-        "treatment_mr": "कोणताही रोग आढळला नाही. नियमित देखरेख आणि चांगली शेत स्वच्छता सुरू ठेवा.",
-        "treatment_kn": "ಯಾವುದೇ ರೋಗ ಪತ್ತೆಯಾಗಿಲ್ಲ. ನಿಯಮಿತ ಮೇಲ್ವಿಚಾರಣೆ ಮತ್ತು ಉತ್ತಮ ಹೊಲದ ನೈರ್ಮಲ್ಯವನ್ನು ಮುಂದುವರಿಸಿ.",
+        "treatment_hi": "à¤•à¥‹à¤ˆ à¤°à¥‹à¤— à¤¨à¤¹à¥€à¤‚ à¤ªà¤¾à¤¯à¤¾ à¤—à¤¯à¤¾à¥¤ à¤¨à¤¿à¤¯à¤®à¤¿à¤¤ à¤¨à¤¿à¤—à¤°à¤¾à¤¨à¥€ à¤”à¤° à¤…à¤šà¥à¤›à¥€ à¤–à¥‡à¤¤ à¤¸à¥à¤µà¤šà¥à¤›à¤¤à¤¾ à¤œà¤¾à¤°à¥€ à¤°à¤–à¥‡à¤‚à¥¤",
+        "treatment_mr": "à¤•à¥‹à¤£à¤¤à¤¾à¤¹à¥€ à¤°à¥‹à¤— à¤†à¤¢à¤³à¤²à¤¾ à¤¨à¤¾à¤¹à¥€. à¤¨à¤¿à¤¯à¤®à¤¿à¤¤ à¤¦à¥‡à¤–à¤°à¥‡à¤– à¤†à¤£à¤¿ à¤šà¤¾à¤‚à¤—à¤²à¥€ à¤¶à¥‡à¤¤ à¤¸à¥à¤µà¤šà¥à¤›à¤¤à¤¾ à¤¸à¥à¤°à¥‚ à¤ à¥‡à¤µà¤¾.",
+        "treatment_kn": "à²¯à²¾à²µà³à²¦à³‡ à²°à³‹à²— à²ªà²¤à³à²¤à³†à²¯à²¾à²—à²¿à²²à³à²². à²¨à²¿à²¯à²®à²¿à²¤ à²®à³‡à²²à³à²µà²¿à²šà²¾à²°à²£à³† à²®à²¤à³à²¤à³ à²‰à²¤à³à²¤à²® à²¹à³Šà²²à²¦ à²¨à³ˆà²°à³à²®à²²à³à²¯à²µà²¨à³à²¨à³ à²®à³à²‚à²¦à³à²µà²°à²¿à²¸à²¿.",
         "severity": "healthy"
     }
 }
 
 severity_colors = {"healthy": "#7bd389", "moderate": "#f2c744", "severe": "#e0665a"}
-severity_labels = {"healthy": "Healthy", "moderate": "Moderate risk", "severe": "Severe — act now"}
+severity_labels = {"healthy": "Healthy", "moderate": "Moderate risk", "severe": "Severe â€” act now"}
+
+unknown_text = {
+    "en": "This doesn't look like one of the crop leaves our model was trained on (tomato, potato, or bell pepper). Please retake the photo, or check with a local agriculture expert.",
+    "hi": "à¤¯à¤¹ à¤‰à¤¨ à¤«à¤¸à¤² à¤ªà¤¤à¥à¤¤à¤¿à¤¯à¥‹à¤‚ à¤®à¥‡à¤‚ à¤¸à¥‡ à¤¨à¤¹à¥€à¤‚ à¤²à¤—à¤¤à¤¾ à¤œà¤¿à¤¨ à¤ªà¤° à¤¹à¤®à¤¾à¤°à¤¾ à¤®à¥‰à¤¡à¤² à¤ªà¥à¤°à¤¶à¤¿à¤•à¥à¤·à¤¿à¤¤ à¤¹à¥ˆ (à¤Ÿà¤®à¤¾à¤Ÿà¤°, à¤†à¤²à¥‚ à¤¯à¤¾ à¤¶à¤¿à¤®à¤²à¤¾ à¤®à¤¿à¤°à¥à¤š)à¥¤ à¤•à¥ƒà¤ªà¤¯à¤¾ à¤«à¤¿à¤° à¤¸à¥‡ à¤«à¥‹à¤Ÿà¥‹ à¤²à¥‡à¤‚, à¤¯à¤¾ à¤¸à¥à¤¥à¤¾à¤¨à¥€à¤¯ à¤•à¥ƒà¤·à¤¿ à¤µà¤¿à¤¶à¥‡à¤·à¤œà¥à¤ž à¤¸à¥‡ à¤¸à¤‚à¤ªà¤°à¥à¤• à¤•à¤°à¥‡à¤‚à¥¤",
+    "mr": "à¤¹à¥‡ à¤†à¤®à¤šà¥à¤¯à¤¾ à¤®à¥‰à¤¡à¥‡à¤²à¤¨à¥‡ à¤ªà¥à¤°à¤¶à¤¿à¤•à¥à¤·à¤¿à¤¤ à¤•à¥‡à¤²à¥‡à¤²à¥à¤¯à¤¾ à¤ªà¤¿à¤•à¤¾à¤‚à¤šà¥à¤¯à¤¾ à¤ªà¤¾à¤¨à¤¾à¤‚à¤¸à¤¾à¤°à¤–à¥‡ à¤¦à¤¿à¤¸à¤¤ à¤¨à¤¾à¤¹à¥€ (à¤Ÿà¥‹à¤®à¥…à¤Ÿà¥‹, à¤¬à¤Ÿà¤¾à¤Ÿà¤¾ à¤•à¤¿à¤‚à¤µà¤¾ à¤¢à¥‹à¤¬à¤³à¥€ à¤®à¤¿à¤°à¤šà¥€). à¤•à¥ƒà¤ªà¤¯à¤¾ à¤ªà¥à¤¨à¥à¤¹à¤¾ à¤«à¥‹à¤Ÿà¥‹ à¤˜à¥à¤¯à¤¾, à¤•à¤¿à¤‚à¤µà¤¾ à¤¸à¥à¤¥à¤¾à¤¨à¤¿à¤• à¤•à¥ƒà¤·à¥€ à¤¤à¤œà¥à¤žà¤¾à¤‚à¤¶à¥€ à¤¸à¤‚à¤ªà¤°à¥à¤• à¤¸à¤¾à¤§à¤¾.",
+    "kn": "à²‡à²¦à³ à²¨à²®à³à²® à²®à²¾à²¦à²°à²¿à²—à³† à²¤à²°à²¬à³‡à²¤à²¿ à²¨à³€à²¡à²¿à²¦ à²¬à³†à²³à³† à²Žà²²à³†à²—à²³à²‚à²¤à³† à²•à²¾à²£à³à²¤à³à²¤à²¿à²²à³à²² (à²Ÿà³Šà²®à³à²¯à²¾à²Ÿà³Š, à²†à²²à³‚à²—à²¡à³à²¡à³† à²…à²¥à²µà²¾ à²¦à³Šà²¡à³à²¡ à²®à³†à²£à²¸à²¿à²¨à²•à²¾à²¯à²¿). à²¦à²¯à²µà²¿à²Ÿà³à²Ÿà³ à²«à³‹à²Ÿà³‹à²µà²¨à³à²¨à³ à²®à²¤à³à²¤à³† à²¤à³†à²—à³†à²¯à²¿à²°à²¿, à²…à²¥à²µà²¾ à²¸à³à²¥à²³à³€à²¯ à²•à³ƒà²·à²¿ à²¤à²œà³à²žà²°à²¨à³à²¨à³ à²¸à²‚à²ªà²°à³à²•à²¿à²¸à²¿."
+}
 
 # ---------- Upload + Result ----------
-st.markdown('<div class="section-header">📸 Scan a crop leaf</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-header">ðŸ“¸ Scan a crop leaf</div>', unsafe_allow_html=True)
 
 col_upload, col_result = st.columns([1, 1.2], gap="large")
 
@@ -352,87 +367,123 @@ with col_result:
         pred = model.predict(arr)
         result = class_names[np.argmax(pred)]
         confidence = float(np.max(pred)) * 100
-        info = disease_info.get(result, {
-            "display": result.replace("_", " "), "icon": "🌿",
-            "treatment_en": "Consult a local agriculture expert.",
-            "treatment_hi": "स्थानीय कृषि विशेषज्ञ से सलाह लें।",
-            "treatment_mr": "स्थानिक कृषी तज्ञांचा सल्ला घ्या.",
-            "treatment_kn": "ಸ್ಥಳೀಯ ಕೃಷಿ ತಜ್ಞರನ್ನು ಸಂಪರ್ಕಿಸಿ.",
-            "severity": "moderate"
-        })
-        color = severity_colors.get(info["severity"], "#f2c744")
 
-        st.markdown(f"""
-            <div class="result-card" style="border-top-color:{color};">
-                <div class="result-label">Detection result</div>
-                <div class="result-name">{info['icon']} {info['display']}</div>
-                <div style="margin-top:10px;">
-                    <span class="status-dot" style="background-color:{color};"></span>
-                    <span style="font-weight:600; color:{color};">{severity_labels.get(info['severity'], '')}</span>
-                </div>
-                <div style="margin-top:14px; font-size:0.85rem; color:#d3ddc7;">Confidence: <b>{confidence:.1f}%</b></div>
-                <div class="confidence-bar-bg">
-                    <div class="confidence-bar-fill" style="width:{confidence}%; background-color:{color};"></div>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-
-        lang_choice = st.selectbox("🌐 Voice language", ["English", "हिंदी (Hindi)", "मराठी (Marathi)", "ಕನ್ನಡ (Kannada)"])
+        # --- Language selector is needed either way, so pick it up front ---
+        lang_choice = st.selectbox("ðŸŒ Voice language", ["English", "à¤¹à¤¿à¤‚à¤¦à¥€ (Hindi)", "à¤®à¤°à¤¾à¤ à¥€ (Marathi)", "à²•à²¨à³à²¨à²¡ (Kannada)"])
         lang_map = {
             "English": ("en", "treatment_en"),
-            "हिंदी (Hindi)": ("hi", "treatment_hi"),
-            "मराठी (Marathi)": ("mr", "treatment_mr"),
-            "ಕನ್ನಡ (Kannada)": ("kn", "treatment_kn"),
+            "à¤¹à¤¿à¤‚à¤¦à¥€ (Hindi)": ("hi", "treatment_hi"),
+            "à¤®à¤°à¤¾à¤ à¥€ (Marathi)": ("mr", "treatment_mr"),
+            "à²•à²¨à³à²¨à²¡ (Kannada)": ("kn", "treatment_kn"),
         }
         lang_code, treatment_key = lang_map[lang_choice]
-        treatment_text = info[treatment_key]
 
-        st.markdown(f"""
-            <div class="treatment-box">
-                <div style="font-weight:700; color:#f2c744; margin-bottom:6px;">💊 Recommended action</div>
-                <div style="color:#eef2e6; line-height:1.6;">{treatment_text}</div>
-            </div>
-        """, unsafe_allow_html=True)
+        if confidence < CONFIDENCE_THRESHOLD:
+            # --- Unrecognized image: don't force a disease label ---
+            st.markdown(f"""
+                <div class="result-card" style="border-top-color:#e0665a;">
+                    <div class="result-label">Detection result</div>
+                    <div class="result-name">â“ Not recognized</div>
+                    <div style="margin-top:10px;">
+                        <span class="status-dot" style="background-color:#e0665a;"></span>
+                        <span style="font-weight:600; color:#e0665a;">Low confidence ({confidence:.1f}%)</span>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
 
-        if st.button("🔊 Play voice advice", use_container_width=True):
-            from gtts import gTTS
-            tts = gTTS(f"{info['display']}. {treatment_text}", lang=lang_code)
-            tts.save("output.mp3")
-            st.audio("output.mp3")
+            st.markdown(f"""
+                <div class="error-box">
+                    <div style="font-weight:700; color:#e0665a; margin-bottom:6px;">âš ï¸ Image not recognized</div>
+                    <div style="color:#eef2e6; line-height:1.6;">{unknown_text[lang_code]}</div>
+                </div>
+            """, unsafe_allow_html=True)
+        else:
+            info = disease_info.get(result, {
+                "display": result.replace("_", " "), "icon": "ðŸŒ¿",
+                "treatment_en": "Consult a local agriculture expert.",
+                "treatment_hi": "à¤¸à¥à¤¥à¤¾à¤¨à¥€à¤¯ à¤•à¥ƒà¤·à¤¿ à¤µà¤¿à¤¶à¥‡à¤·à¤œà¥à¤ž à¤¸à¥‡ à¤¸à¤²à¤¾à¤¹ à¤²à¥‡à¤‚à¥¤",
+                "treatment_mr": "à¤¸à¥à¤¥à¤¾à¤¨à¤¿à¤• à¤•à¥ƒà¤·à¥€ à¤¤à¤œà¥à¤žà¤¾à¤‚à¤šà¤¾ à¤¸à¤²à¥à¤²à¤¾ à¤˜à¥à¤¯à¤¾.",
+                "treatment_kn": "à²¸à³à²¥à²³à³€à²¯ à²•à³ƒà²·à²¿ à²¤à²œà³à²žà²°à²¨à³à²¨à³ à²¸à²‚à²ªà²°à³à²•à²¿à²¸à²¿.",
+                "severity": "moderate"
+            })
+            color = severity_colors.get(info["severity"], "#f2c744")
+
+            st.markdown(f"""
+                <div class="result-card" style="border-top-color:{color};">
+                    <div class="result-label">Detection result</div>
+                    <div class="result-name">{info['icon']} {info['display']}</div>
+                    <div style="margin-top:10px;">
+                        <span class="status-dot" style="background-color:{color};"></span>
+                        <span style="font-weight:600; color:{color};">{severity_labels.get(info['severity'], '')}</span>
+                    </div>
+                    <div style="margin-top:14px; font-size:0.85rem; color:#d3ddc7;">Confidence: <b>{confidence:.1f}%</b></div>
+                    <div class="confidence-bar-bg">
+                        <div class="confidence-bar-fill" style="width:{confidence}%; background-color:{color};"></div>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+
+            treatment_text = info[treatment_key]
+
+            st.markdown(f"""
+                <div class="treatment-box">
+                    <div style="font-weight:700; color:#f2c744; margin-bottom:6px;">ðŸ’Š Recommended action</div>
+                    <div style="color:#eef2e6; line-height:1.6;">{treatment_text}</div>
+                </div>
+            """, unsafe_allow_html=True)
+
+            if st.button("ðŸ”Š Play voice advice", use_container_width=True):
+                try:
+                    import pyttsx3
+                    engine = pyttsx3.init()
+                    # Try to pick a voice matching the language; falls back to default if unavailable
+                    for voice in engine.getProperty("voices"):
+                        if lang_code in voice.id.lower() or lang_code in (voice.languages[0].decode(errors="ignore").lower() if voice.languages else ""):
+                            engine.setProperty("voice", voice.id)
+                            break
+                    engine.save_to_file(f"{info['display']}. {treatment_text}", "output.mp3")
+                    engine.runAndWait()
+                    st.audio("output.mp3")
+                except Exception as e:
+                    st.warning(
+                        "Offline voice engine isn't available on this device. "
+                        "Install a system TTS engine (e.g. `espeak` on Linux, or use the built-in "
+                        "voices on Windows/Mac) and `pip install pyttsx3` to enable this feature."
+                    )
     else:
         st.markdown("""
             <div style="height:100%; display:flex; align-items:center; justify-content:center; text-align:center; color:#9fab8f; padding: 3rem 1rem;">
                 <div>
-                    <div style="font-size:3.2rem;">🌱</div>
+                    <div style="font-size:3.2rem;">ðŸŒ±</div>
                     <div style="margin-top:10px;">Upload a photo to see detection results here</div>
                 </div>
             </div>
         """, unsafe_allow_html=True)
 
 # ---------- Helpline ----------
-st.markdown('<div class="section-header">📞 Farmer helpline & support</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-header">ðŸ“ž Farmer helpline & support</div>', unsafe_allow_html=True)
 st.markdown("""
     <div class="helpline-card">
-        <div style="font-weight:700; color:#f2c744; margin-bottom:6px;">📱 Kisan Call Centre (Government of India)</div>
-        <div style="color:#eef2e6; font-size:0.95rem; margin-bottom:14px;">Toll-free <b>1800-180-1551</b> · 6 AM–10 PM, all 7 days · 22 local languages</div>
-        <div style="font-weight:700; color:#f2c744; margin-bottom:6px;">📱 PM-KISAN Helpline</div>
-        <div style="color:#eef2e6; font-size:0.95rem;">Toll-free <b>155261</b> / <b>1800-115-526</b> &nbsp;|&nbsp; ☎️ 011-24300606</div>
+        <div style="font-weight:700; color:#f2c744; margin-bottom:6px;">ðŸ“± Kisan Call Centre (Government of India)</div>
+        <div style="color:#eef2e6; font-size:0.95rem; margin-bottom:14px;">Toll-free <b>1800-180-1551</b> Â· 6 AMâ€“10 PM, all 7 days Â· 22 local languages</div>
+        <div style="font-weight:700; color:#f2c744; margin-bottom:6px;">ðŸ“± PM-KISAN Helpline</div>
+        <div style="color:#eef2e6; font-size:0.95rem;">Toll-free <b>155261</b> / <b>1800-115-526</b> &nbsp;|&nbsp; â˜Žï¸ 011-24300606</div>
     </div>
 """, unsafe_allow_html=True)
 st.caption("Numbers verified from official Government of India sources. Production version will link directly to the nearest Maharashtra Krishi Vibhag extension officer by location.")
 
 # ---------- Roadmap ----------
-st.markdown('<div class="section-header">🌱 Expanding crop coverage</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-header">ðŸŒ± Expanding crop coverage</div>', unsafe_allow_html=True)
 st.write("This prototype currently detects diseases in **tomato, potato, and bell pepper**. Next, we're expanding to Maharashtra's core crops:")
 
 r1, r2, r3, r4 = st.columns(4)
 with r1:
-    st.markdown('<div class="roadmap-chip">🌾 <b>Jowar</b><br><span style="font-size:0.85rem;">Grain mold, downy mildew</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="roadmap-chip">ðŸŒ¾ <b>Jowar</b><br><span style="font-size:0.85rem;">Grain mold, downy mildew</span></div>', unsafe_allow_html=True)
 with r2:
-    st.markdown('<div class="roadmap-chip">🌾 <b>Rice</b><br><span style="font-size:0.85rem;">Blast, bacterial blight</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="roadmap-chip">ðŸŒ¾ <b>Rice</b><br><span style="font-size:0.85rem;">Blast, bacterial blight</span></div>', unsafe_allow_html=True)
 with r3:
-    st.markdown('<div class="roadmap-chip">🌿 <b>Cotton</b><br><span style="font-size:0.85rem;">Pink bollworm, leaf curl</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="roadmap-chip">ðŸŒ¿ <b>Cotton</b><br><span style="font-size:0.85rem;">Pink bollworm, leaf curl</span></div>', unsafe_allow_html=True)
 with r4:
-    st.markdown('<div class="roadmap-chip">🎋 <b>Sugarcane</b><br><span style="font-size:0.85rem;">Red rot, smut</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="roadmap-chip">ðŸŽ‹ <b>Sugarcane</b><br><span style="font-size:0.85rem;">Red rot, smut</span></div>', unsafe_allow_html=True)
 
-st.markdown('<p class="footer-note">Prototype for SIH 2026 · Problem Statement SIH26131 · Government of Maharashtra</p>', unsafe_allow_html=True)
+st.markdown('<p class="footer-note">Prototype for SIH 2026 Â· Problem Statement SIH26131 Â· Government of Maharashtra</p>', unsafe_allow_html=True)
