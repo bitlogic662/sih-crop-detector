@@ -290,6 +290,7 @@ def load_my_model():
 model, class_names = load_my_model()
 
 # =====================================================================================
+#  PHASE 2 — SMART PREDICTION: Image + Weather -> Disease Risk Forecast
 #  LOCATION + WEATHER (automatic — no manual entry required)
 #  Location: IP-based geolocation (ipapi.co)
 #  Weather:  Open-Meteo (satellite/reanalysis-backed forecast model, free, no API key)
@@ -558,4 +559,3 @@ if weather and location:
         rain_val = weather.get("rain_today")
         st.markdown(f'<div class="weather-card"><div class="stat-num">{rain_val if rain_val is not None else "–"} mm</div><div class="stat-label">Rain today</div></div>', unsafe_allow_html=True)
     with w5:
-        st.markdown(f'<div class="weather-card"><div class="stat-num">{weath
