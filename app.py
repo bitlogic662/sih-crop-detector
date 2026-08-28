@@ -3,13 +3,13 @@ from tensorflow.keras.models import load_model
 from PIL import Image
 import numpy as np
 import json
-
+ 
 st.set_page_config(
     page_title="KrishiRakshak AI - Crop Disease Detection",
     page_icon="🌾",
     layout="wide"
 )
-
+ 
 # ---------- Custom styling ----------
 st.markdown("""
     <style>
@@ -20,7 +20,7 @@ st.markdown("""
         color: #eef2e6 !important;
     }
     .stApp .stSelectbox label, .stApp .stFileUploader label { color: #eef2e6 !important; }
-
+ 
     .hero {
         background: linear-gradient(135deg, #23331b 0%, #35492a 45%, #4a6339 100%);
         padding: 2.4rem 2.6rem;
@@ -67,7 +67,7 @@ st.markdown("""
         position: relative;
         z-index: 1;
     }
-
+ 
     .stat-card {
         background: rgba(255,255,255,0.06);
         border-radius: 18px;
@@ -85,13 +85,13 @@ st.markdown("""
         color: #f2c744;
     }
     .stat-label { font-size: 0.8rem; color: #d3ddc7; margin-top: 2px; }
-
+ 
     .upload-panel-label {
         font-weight: 700;
         color: #f6f9f2;
         margin-bottom: 0.6rem;
     }
-
+ 
     /* Style Streamlit's ACTUAL dropzone so the whole visible box is the real drop target */
     div[data-testid="stFileUploaderDropzone"] {
         border: 2.5px dashed rgba(242,199,68,0.55) !important;
@@ -118,7 +118,7 @@ st.markdown("""
         border-radius: 30px !important;
         font-weight: 700 !important;
     }
-
+ 
     .result-card {
         background: rgba(255,255,255,0.06);
         border-radius: 20px;
@@ -173,6 +173,12 @@ st.markdown("""
         margin-top: 1.2rem;
         border: 1px solid rgba(242,199,68,0.35);
     }
+    .weather-impact-box {
+        border-radius: 18px;
+        padding: 1.3rem 1.6rem;
+        margin-top: 1.2rem;
+        border: 1px solid rgba(255,255,255,0.15);
+    }
     .section-header {
         font-size: 1.35rem;
         font-weight: 800;
@@ -216,6 +222,25 @@ st.markdown("""
         font-weight: 800;
         margin: 0 auto 10px auto;
     }
+    .risk-card {
+        border-radius: 18px;
+        padding: 1.1rem 1.2rem;
+        border: 1px solid rgba(255,255,255,0.10);
+        box-shadow: 0 4px 14px rgba(0,0,0,0.22);
+        height: 100%;
+    }
+    .risk-bar-bg {
+        background-color: rgba(255,255,255,0.15);
+        border-radius: 10px;
+        height: 10px;
+        width: 100%;
+        margin-top: 8px;
+        overflow: hidden;
+    }
+    .risk-bar-fill {
+        height: 10px;
+        border-radius: 10px;
+    }
     .footer-note {
         color: #9fab8f;
         font-size: 0.8rem;
@@ -224,7 +249,7 @@ st.markdown("""
         padding-top: 1.5rem;
         border-top: 1px solid rgba(255,255,255,0.10);
     }
-
+ 
     /* Streamlit native widgets */
     div[data-testid="stSelectbox"] > div {
         background: rgba(255,255,255,0.08) !important;
@@ -232,6 +257,9 @@ st.markdown("""
         border: 1px solid rgba(255,255,255,0.15) !important;
     }
     div[data-testid="stSelectbox"] div, div[data-testid="stSelectbox"] span {
+        color: #eef2e6 !important;
+    }
+    div[data-testid="stNumberInput"] input, div[data-testid="stNumberInput"] label {
         color: #eef2e6 !important;
     }
     .stButton button {
@@ -245,7 +273,7 @@ st.markdown("""
     .stButton button:hover { background: #f6d768 !important; }
     </style>
 """, unsafe_allow_html=True)
-
+ 
 # ---------- Load model ----------
 @st.cache_resource
 def load_my_model():
@@ -253,9 +281,9 @@ def load_my_model():
     with open("class_names.json") as f:
         class_names = json.load(f)
     return model, class_names
-
+ 
 model, class_names = load_my_model()
-
+ 
 # ---------- Hero ----------
 st.markdown("""
     <div class="hero">
@@ -264,7 +292,7 @@ st.markdown("""
         <div class="hero-badge">🏛️ Government of Maharashtra · SIH 2026 · SIH26131</div>
     </div>
 """, unsafe_allow_html=True)
-
+ 
 # ---------- Stat row ----------
 s1, s2, s3, s4 = st.columns(4)
 with s1:
@@ -275,9 +303,9 @@ with s3:
     st.markdown('<div class="stat-card"><div class="stat-num">4</div><div class="stat-label">Languages</div></div>', unsafe_allow_html=True)
 with s4:
     st.markdown('<div class="stat-card"><div class="stat-num">Offline</div><div class="stat-label">Field-ready design</div></div>', unsafe_allow_html=True)
-
+ 
 st.write("")
-
+ 
 # ---------- How it works ----------
 st.markdown('<div class="section-header">⚡ How it works</div>', unsafe_allow_html=True)
 h1, h2, h3 = st.columns(3)
@@ -287,9 +315,9 @@ with h2:
     st.markdown('<div class="step-card"><div class="step-num">2</div><b>🧠 AI analyzes</b><br><span style="opacity:0.85; font-size:0.85rem;">On-device model detects disease instantly</span></div>', unsafe_allow_html=True)
 with h3:
     st.markdown('<div class="step-card"><div class="step-num">3</div><b>🗣️ Get advice</b><br><span style="opacity:0.85; font-size:0.85rem;">Hear treatment steps in your language</span></div>', unsafe_allow_html=True)
-
+ 
 st.write("")
-
+ 
 # ---------- Disease info ----------
 disease_info = {
     "Pepper__bell___Bacterial_spot": {
@@ -329,22 +357,112 @@ disease_info = {
         "severity": "healthy"
     }
 }
-
+ 
 severity_colors = {"healthy": "#7bd389", "moderate": "#f2c744", "severe": "#e0665a"}
 severity_labels = {"healthy": "Healthy", "moderate": "Moderate risk", "severe": "Severe — act now"}
-
+ 
+# ---------- Weather-disease profiles ----------
+# Approximate agronomic conditions that favor onset/spread of each disease.
+# temp_range = (°C low, °C high) most favorable; humidity_min = % RH above which
+# spread accelerates. These are general heuristics for field guidance, not a
+# calibrated epidemiological model — always confirm with a local Krishi Vibhag
+# extension officer for high-value decisions.
+weather_profiles = {
+    "Pepper__bell___Bacterial_spot": {
+        "temp_range": (24, 30),
+        "humidity_min": 80,
+        "note": "warm, humid weather with splashing rain or overhead irrigation"
+    },
+    "Potato___Early_blight": {
+        "temp_range": (24, 29),
+        "humidity_min": 80,
+        "note": "warm days with humid nights and dew"
+    },
+    "Tomato_Late_blight": {
+        "temp_range": (10, 20),
+        "humidity_min": 90,
+        "note": "cool, cloudy, wet weather — this disease spreads fastest of the three"
+    },
+    "Tomato_healthy": None
+}
+ 
+ 
+def calculate_weather_risk(temp, humidity, profile):
+    """Return (score 0-100, level, color) for how favorable given weather is
+    for a disease to establish or spread, based on a simple heuristic
+    distance-from-ideal-range model."""
+    if profile is None:
+        return 0, "N/A", "#7bd389"
+ 
+    t_min, t_max = profile["temp_range"]
+    h_min = profile["humidity_min"]
+ 
+    if t_min <= temp <= t_max:
+        temp_score = 100
+    else:
+        dist = min(abs(temp - t_min), abs(temp - t_max))
+        temp_score = max(0, 100 - dist * 8)
+ 
+    if humidity >= h_min:
+        hum_score = 100
+    else:
+        dist = h_min - humidity
+        hum_score = max(0, 100 - dist * 3)
+ 
+    score = round(temp_score * 0.5 + hum_score * 0.5)
+ 
+    if score >= 70:
+        level, color = "High risk", "#e0665a"
+    elif score >= 40:
+        level, color = "Moderate risk", "#f2c744"
+    else:
+        level, color = "Low risk", "#7bd389"
+ 
+    return score, level, color
+ 
+ 
+# ---------- Weather-based risk monitor (works even before a photo is uploaded) ----------
+st.markdown('<div class="section-header">🌦️ Weather-Based Risk Forecast</div>', unsafe_allow_html=True)
+st.write("Temperature and humidity strongly influence when crop diseases take hold and how fast they spread. Enter today's (or a forecast) reading to see which diseases are favored right now — useful even before symptoms appear.")
+ 
+w1, w2 = st.columns(2)
+with w1:
+    current_temp = st.number_input("🌡️ Temperature (°C)", min_value=0.0, max_value=50.0, value=28.0, step=0.5)
+with w2:
+    current_humidity = st.number_input("💧 Relative humidity (%)", min_value=0, max_value=100, value=75, step=1)
+ 
+risk_cols = st.columns(3)
+risk_diseases = [d for d in weather_profiles if weather_profiles[d] is not None]
+for col, disease_key in zip(risk_cols, risk_diseases):
+    profile = weather_profiles[disease_key]
+    info = disease_info[disease_key]
+    score, level, color = calculate_weather_risk(current_temp, current_humidity, profile)
+    with col:
+        st.markdown(f"""
+            <div class="risk-card" style="background: rgba(255,255,255,0.06); border-top: 4px solid {color};">
+                <div style="font-size:0.78rem; font-weight:700; letter-spacing:1px; color:#bcc7ab; text-transform:uppercase;">{info['icon']} {info['display']}</div>
+                <div style="font-weight:800; font-size:1.15rem; color:{color}; margin-top:4px;">{level}</div>
+                <div class="risk-bar-bg"><div class="risk-bar-fill" style="width:{score}%; background-color:{color};"></div></div>
+                <div style="font-size:0.78rem; color:#bcc7ab; margin-top:8px;">Favored by {profile['note']}</div>
+            </div>
+        """, unsafe_allow_html=True)
+ 
+st.caption("Risk levels are a general agronomic guide based on typical temperature/humidity ranges reported for these diseases, not a lab-calibrated forecast. Use them to decide when to scout fields more closely.")
+ 
+st.write("")
+ 
 # ---------- Upload + Result ----------
 st.markdown('<div class="section-header">📸 Scan a crop leaf</div>', unsafe_allow_html=True)
-
+ 
 col_upload, col_result = st.columns([1, 1.2], gap="large")
-
+ 
 with col_upload:
     st.markdown('<div class="upload-panel-label">Drag a leaf photo below, or click to browse</div>', unsafe_allow_html=True)
     uploaded = st.file_uploader("", type=["jpg", "png", "jpeg"], label_visibility="collapsed")
     if uploaded:
         img = Image.open(uploaded).convert("RGB")
         st.image(img, use_container_width=True)
-
+ 
 with col_result:
     if uploaded:
         img_resized = img.resize((224, 224))
@@ -361,7 +479,7 @@ with col_result:
             "severity": "moderate"
         })
         color = severity_colors.get(info["severity"], "#f2c744")
-
+ 
         st.markdown(f"""
             <div class="result-card" style="border-top-color:{color};">
                 <div class="result-label">Detection result</div>
@@ -376,7 +494,7 @@ with col_result:
                 </div>
             </div>
         """, unsafe_allow_html=True)
-
+ 
         lang_choice = st.selectbox("🌐 Voice language", ["English", "हिंदी (Hindi)", "मराठी (Marathi)", "ಕನ್ನಡ (Kannada)"])
         lang_map = {
             "English": ("en", "treatment_en"),
@@ -386,14 +504,51 @@ with col_result:
         }
         lang_code, treatment_key = lang_map[lang_choice]
         treatment_text = info[treatment_key]
-
+ 
         st.markdown(f"""
             <div class="treatment-box">
                 <div style="font-weight:700; color:#f2c744; margin-bottom:6px;">💊 Recommended action</div>
                 <div style="color:#eef2e6; line-height:1.6;">{treatment_text}</div>
             </div>
         """, unsafe_allow_html=True)
-
+ 
+        # --- Weather impact on the specific diagnosed plant ---
+        profile = weather_profiles.get(result)
+        if profile is not None:
+            p_score, p_level, p_color = calculate_weather_risk(current_temp, current_humidity, profile)
+            if p_score >= 70:
+                progression_msg = (
+                    f"Current conditions ({current_temp:.0f}°C, {current_humidity}% humidity) closely match the "
+                    f"{profile['note']} that this disease needs to spread fast. Expect symptoms to worsen and "
+                    f"spread to nearby plants within the next few days if untreated — treat immediately and "
+                    f"re-check the field every 1–2 days."
+                )
+            elif p_score >= 40:
+                progression_msg = (
+                    f"Current conditions ({current_temp:.0f}°C, {current_humidity}% humidity) partially favor "
+                    f"this disease. Spread may be moderate — apply treatment soon and monitor every few days, "
+                    f"especially if weather turns {profile['note']}."
+                )
+            else:
+                progression_msg = (
+                    f"Current conditions ({current_temp:.0f}°C, {current_humidity}% humidity) are not very "
+                    f"favorable for this disease to spread quickly. Still treat the affected plant, but the "
+                    f"risk of rapid spread to the rest of the field is lower right now."
+                )
+            st.markdown(f"""
+                <div class="weather-impact-box" style="background: rgba(255,255,255,0.06); border-left: 5px solid {p_color};">
+                    <div style="font-weight:700; color:{p_color}; margin-bottom:6px;">📈 Weather impact on progression — {p_level}</div>
+                    <div style="color:#eef2e6; line-height:1.6;">{progression_msg}</div>
+                </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+                <div class="weather-impact-box" style="background: rgba(255,255,255,0.06); border-left: 5px solid #7bd389;">
+                    <div style="font-weight:700; color:#7bd389; margin-bottom:6px;">📈 Weather impact</div>
+                    <div style="color:#eef2e6; line-height:1.6;">No active disease detected, so current weather poses no spread risk. Keep an eye on the risk forecast above for early warning.</div>
+                </div>
+            """, unsafe_allow_html=True)
+ 
         if st.button("🔊 Play voice advice", use_container_width=True):
             from gtts import gTTS
             tts = gTTS(f"{info['display']}. {treatment_text}", lang=lang_code)
@@ -408,7 +563,7 @@ with col_result:
                 </div>
             </div>
         """, unsafe_allow_html=True)
-
+ 
 # ---------- Helpline ----------
 st.markdown('<div class="section-header">📞 Farmer helpline & support</div>', unsafe_allow_html=True)
 st.markdown("""
@@ -420,11 +575,11 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 st.caption("Numbers verified from official Government of India sources. Production version will link directly to the nearest Maharashtra Krishi Vibhag extension officer by location.")
-
+ 
 # ---------- Roadmap ----------
 st.markdown('<div class="section-header">🌱 Expanding crop coverage</div>', unsafe_allow_html=True)
 st.write("This prototype currently detects diseases in **tomato, potato, and bell pepper**. Next, we're expanding to Maharashtra's core crops:")
-
+ 
 r1, r2, r3, r4 = st.columns(4)
 with r1:
     st.markdown('<div class="roadmap-chip">🌾 <b>Jowar</b><br><span style="font-size:0.85rem;">Grain mold, downy mildew</span></div>', unsafe_allow_html=True)
@@ -434,5 +589,5 @@ with r3:
     st.markdown('<div class="roadmap-chip">🌿 <b>Cotton</b><br><span style="font-size:0.85rem;">Pink bollworm, leaf curl</span></div>', unsafe_allow_html=True)
 with r4:
     st.markdown('<div class="roadmap-chip">🎋 <b>Sugarcane</b><br><span style="font-size:0.85rem;">Red rot, smut</span></div>', unsafe_allow_html=True)
-
+ 
 st.markdown('<p class="footer-note">Prototype for SIH 2026 · Problem Statement SIH26131 · Government of Maharashtra</p>', unsafe_allow_html=True)
