@@ -69,6 +69,7 @@ UI_TRANSLATIONS = {
         "Detailed Recommendation": "विस्तृत सुझाव",
         "Recommended Action": "अनुशंसित कार्रवाई",
         "Treatment": "उपचार",
+        "Required Quantity": "आवश्यक मात्रा",
         "Weather Risk": "मौसम का जोखिम",
         "How Quickly Should You Act?": "आपको कितनी जल्दी कार्रवाई करनी चाहिए?",
         "Important Precaution": "महत्वपूर्ण सावधानी",
@@ -213,6 +214,7 @@ UI_TRANSLATIONS = {
         "Detailed Recommendation": "सविस्तर शिफारस",
         "Recommended Action": "शिफारस केलेली कृती",
         "Treatment": "उपचार",
+        "Required Quantity": "आवश्यक प्रमाण",
         "Weather Risk": "हवामानाचा धोका",
         "How Quickly Should You Act?": "किती लवकर कृती करावी?",
         "Important Precaution": "महत्त्वाची खबरदारी",
@@ -357,6 +359,7 @@ UI_TRANSLATIONS = {
         "Detailed Recommendation": "ವಿವರವಾದ ಶಿಫಾರಸು",
         "Recommended Action": "ಶಿಫಾರಸು ಮಾಡಿದ ಕ್ರಮ",
         "Treatment": "ಚಿಕಿತ್ಸೆ",
+        "Required Quantity": "ಅಗತ್ಯವಿರುವ ಪ್ರಮಾಣ",
         "Weather Risk": "ಹವಾಮಾನ ಅಪಾಯ",
         "How Quickly Should You Act?": "ಎಷ್ಟು ಬೇಗ ಕ್ರಮ ಕೈಗೊಳ್ಳಬೇಕು?",
         "Important Precaution": "ಪ್ರಮುಖ ಮುನ್ನೆಚ್ಚರಿಕೆ",
@@ -1076,98 +1079,171 @@ def is_supported_leaf_image(img):
         return False, unsupported_msg
 
 # Disease Info Database
+# "dose" holds the label-recommended concentration for the suggested product:
+#   amount = quantity of product per liter of spray water, unit = "g" or "ml".
+# Entries with dose=None have no chemical spray quantity (healthy, or remove/destroy only).
 disease_info = {
     "Pepper__bell___Bacterial_spot": {
         "name": "Bell Pepper Bacterial Spot",
         "severity": "Moderate",
         "action": "Spray copper-based bactericides early. Remove and destroy infected leaves to halt spread.",
         "precaution": "Avoid overhead irrigation as water splashes spread bacteria rapidly.",
+        "product": "Copper Oxychloride 50% WP",
+        "dose": {"amount": 3.0, "unit": "g"},
     },
     "Pepper__bell___healthy": {
         "name": "Healthy Bell Pepper Leaf",
         "severity": "Healthy",
         "action": "No treatment required. Maintain balanced watering and optimal soil fertility.",
         "precaution": "Regularly inspect undersides of leaves for early signs of pests.",
+        "product": None,
+        "dose": None,
     },
     "Potato___Early_blight": {
         "name": "Potato Early Blight",
         "severity": "Moderate",
         "action": "Apply fungicides like Mancozeb or Chlorothalonil every 7–10 days.",
         "precaution": "Practice crop rotation with non-solanaceous crops for at least 2–3 seasons.",
+        "product": "Mancozeb 75% WP",
+        "dose": {"amount": 2.5, "unit": "g"},
     },
     "Potato___Late_blight": {
         "name": "Potato Late Blight",
         "severity": "Severe",
         "action": "Apply systemic fungicides like Ridomil Gold or Cymoxanil immediately.",
         "precaution": "Destroy severely infected plants and maintain field sanitation.",
+        "product": "Ridomil Gold (Metalaxyl-M + Mancozeb)",
+        "dose": {"amount": 2.5, "unit": "g"},
     },
     "Potato___healthy": {
         "name": "Healthy Potato Leaf",
         "severity": "Healthy",
         "action": "Crop is healthy. Ensure adequate potassium and nitrogen nutrients.",
         "precaution": "Keep foliage dry; irrigate early in the day.",
+        "product": None,
+        "dose": None,
     },
     "Tomato___Bacterial_spot": {
         "name": "Tomato Bacterial Spot",
         "severity": "Moderate",
         "action": "Use copper hydroxide spray mixed with Mancozeb for better control.",
         "precaution": "Sanitize tools between handling affected plants.",
+        "product": "Copper Hydroxide 77% WP + Mancozeb",
+        "dose": {"amount": 2.0, "unit": "g"},
     },
     "Tomato___Early_blight": {
         "name": "Tomato Early Blight",
         "severity": "Moderate",
         "action": "Apply copper-based or chlorothalonil fungicides; prune lower infected foliage.",
         "precaution": "Mulch around soil base to prevent fungal spores from splashing up.",
+        "product": "Chlorothalonil 75% WP",
+        "dose": {"amount": 2.0, "unit": "g"},
     },
     "Tomato___Late_blight": {
         "name": "Tomato Late Blight",
         "severity": "Severe",
         "action": "Apply systemic fungicides (Mancozeb, Copper Oxychloride) without delay.",
         "precaution": "High humidity accelerates spread; increase plant spacing for airflow.",
+        "product": "Mancozeb 75% WP / Copper Oxychloride",
+        "dose": {"amount": 2.5, "unit": "g"},
     },
     "Tomato___Leaf_Mold": {
         "name": "Tomato Leaf Mold",
         "severity": "Moderate",
         "action": "Apply fungicides containing difenoconazole or copper soap.",
         "precaution": "Reduce greenhouse or crop humidity by improving air circulation.",
+        "product": "Difenoconazole 25% EC",
+        "dose": {"amount": 0.5, "unit": "ml"},
     },
     "Tomato___Septoria_leaf_spot": {
         "name": "Tomato Septoria Leaf Spot",
         "severity": "Moderate",
         "action": "Apply chlorothalonil or copper fungicide at the first sight of small spots.",
         "precaution": "Remove lower infected leaves to delay upward spread.",
+        "product": "Chlorothalonil 75% WP",
+        "dose": {"amount": 2.0, "unit": "g"},
     },
     "Tomato___Spider_mites Two-spotted_spider_mite": {
         "name": "Tomato Two-Spotted Spider Mite",
         "severity": "Moderate",
         "action": "Apply insecticidal soap, neem oil, or specific miticides (Abamectin).",
         "precaution": "Keep fields free of weeds which harbor mites during dry periods.",
+        "product": "Abamectin 1.8% EC",
+        "dose": {"amount": 0.5, "unit": "ml"},
     },
     "Tomato___Target_Spot": {
         "name": "Tomato Target Spot",
         "severity": "Moderate",
         "action": "Spray fungicides like azoxystrobin or chlorothalonil.",
         "precaution": "Avoid wet leaf surfaces for extended periods.",
+        "product": "Azoxystrobin 23% SC",
+        "dose": {"amount": 1.0, "unit": "ml"},
     },
     "Tomato___Tomato_Yellow_Leaf_Curl_Virus": {
         "name": "Tomato Yellow Leaf Curl Virus",
         "severity": "Severe",
         "action": "Control whitefly vectors using imidacloprid or neem oil sprays. Rogue infected plants.",
         "precaution": "Use yellow sticky traps and reflective mulches to deter whiteflies.",
+        "product": "Imidacloprid 17.8% SL",
+        "dose": {"amount": 0.3, "unit": "ml"},
     },
     "Tomato___Tomato_mosaic_virus": {
         "name": "Tomato Mosaic Virus",
         "severity": "Severe",
         "action": "No chemical cure. Remove and burn infected plants immediately.",
         "precaution": "Wash hands with soap before handling healthy plants; disinfect tools.",
+        "product": None,
+        "dose": None,
     },
     "Tomato___healthy": {
         "name": "Healthy Tomato Leaf",
         "severity": "Healthy",
         "action": "No treatment needed. Continue good agricultural practices.",
         "precaution": "Monitor weekly for early detection of pests.",
+        "product": None,
+        "dose": None,
     },
 }
+
+# Approx. spray solution volume needed per acre, scaled by how much of the
+# field appears affected (standard knapsack/power-sprayer coverage is ~200 L/acre
+# for full coverage; partial spread needs proportionally less).
+SPRAY_VOLUME_LITERS_PER_ACRE = {
+    "Only one/few leaves": 2,      # spot treatment, e.g. hand sprayer bottle
+    "Less than 25%": 50,
+    "25–50%": 100,
+    "50–75%": 150,
+    "More than 75%": 200,
+}
+
+
+def get_treatment_quantity(info, spread_label):
+    """
+    Given a disease_info entry and the farmer's selected 'field_spread' option,
+    return a human-readable string with the required product quantity, or None
+    if no chemical treatment applies.
+    """
+    dose = info.get("dose")
+    product = info.get("product")
+    if not dose or not product:
+        return None
+
+    volume_l = SPRAY_VOLUME_LITERS_PER_ACRE.get(spread_label, 100)
+    total_amount = dose["amount"] * volume_l
+    unit = dose["unit"]
+
+    if unit == "g" and total_amount >= 1000:
+        qty_str = f"{total_amount / 1000:.2f} kg"
+    elif unit == "ml" and total_amount >= 1000:
+        qty_str = f"{total_amount / 1000:.2f} L"
+    else:
+        qty_str = f"{total_amount:.1f} {unit}"
+
+    return (
+        f"{product}: mix {dose['amount']:g} {unit} per liter of water "
+        f"→ approx. {qty_str} of product in {volume_l} L of water per acre "
+        f"(adjust volume proportionally for your actual field size)."
+    )
 
 # Image validation and safety check functions
 def validate_prediction(img, raw_preds, class_names):
@@ -1387,7 +1463,9 @@ if submit_button:
                             "name": raw_class_name.replace("_", " "),
                             "severity": "Moderate",
                             "action": "Consult agricultural expert.",
-                            "precaution": "Monitor closely."
+                            "precaution": "Monitor closely.",
+                            "product": None,
+                            "dose": None,
                         })
                         image_results.append({
                             "name": name,
@@ -1398,7 +1476,8 @@ if submit_button:
                             "confidence": conf,
                             "severity": info["severity"],
                             "action": info["action"],
-                            "precaution": info["precaution"]
+                            "precaution": info["precaution"],
+                            "quantity": get_treatment_quantity(info, field_spread)
                         })
 
                 # Separate valid leaf predictions from rejected images
@@ -1523,6 +1602,14 @@ if submit_button:
                         </div>
                     """, unsafe_allow_html=True)
 
+                    if primary_info.get("quantity"):
+                        st.markdown(f"""
+                            <div class="treatment-box" style="margin-top:8px;">
+                                <h3 style="margin-top:0; color:#f6f9f2;">🧪 {translate("Required Quantity")}</h3>
+                                <p style="font-size:0.98rem; color:#eef2e6;">{translate(primary_info["quantity"])}</p>
+                            </div>
+                        """, unsafe_allow_html=True)
+
                     if primary_info.get("precaution"):
                         st.warning(f"⚠️ **{translate('Important Precaution')}:** {translate(primary_info['precaution'])}")
 
@@ -1550,7 +1637,8 @@ if submit_button:
                     """, unsafe_allow_html=True)
 
                     # Overall Summary Audio synthesis
-                    full_summary_text = f"{translate('Overall Crop Health Assessment')}: {translated_overall_title}. {translate('Recommended Action')}: {translate(primary_info.get('action', ''))}. {translate(urgency_text)}. {translate(urgency_desc)}"
+                    quantity_speech = f" {translate('Required Quantity')}: {translate(primary_info['quantity'])}." if primary_info.get("quantity") else ""
+                    full_summary_text = f"{translate('Overall Crop Health Assessment')}: {translated_overall_title}. {translate('Recommended Action')}: {translate(primary_info.get('action', ''))}.{quantity_speech} {translate(urgency_text)}. {translate(urgency_desc)}"
                     st.markdown('<div class="section-header">🔊 ' + translate("Voice Summary") + '</div>', unsafe_allow_html=True)
                     full_audio_bytes = get_voice_audio_bytes(full_summary_text, CURRENT_LANG)
                     if full_audio_bytes:
