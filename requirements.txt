@@ -3,5 +3,4 @@ tensorflow
 pillow
 gtts
 numpy
-folium
-streamlit-follium
+
