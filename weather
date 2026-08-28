@@ -1,0 +1,304 @@
+"""
+weather_utils.py
+-----------------
+Modular weather + disease-progression logic for KrishiRakshak AI.
+
+- Talks to the OpenWeatherMap API (geocoding, current weather, 5-day/3-hour forecast).
+- Never crashes the app: every network call is wrapped and raises a single
+  WeatherAPIError that the caller can catch and degrade gracefully.
+- Contains the disease <-> weather compatibility model used to compute a
+  Low / Medium / High risk level and a plain-language explanation, plus a
+  short-term progression estimate built from the forecast.
+
+API key handling
+-----------------
+The key is NEVER hard-coded. It is read, in order, from:
+  1. st.secrets["OPENWEATHER_API_KEY"]   (.streamlit/secrets.toml)
+  2. the OPENWEATHER_API_KEY environment variable
+If neither is set, get_api_key() returns None and the caller should show a
+friendly "weather unavailable" message instead of crashing.
+"""
+
+import os
+import requests
+import streamlit as st
+
+OWM_GEOCODE_URL = "https://api.openweathermap.org/geo/1.0/direct"
+OWM_CURRENT_URL = "https://api.openweathermap.org/data/2.5/weather"
+OWM_FORECAST_URL = "https://api.openweathermap.org/data/2.5/forecast"
+
+REQUEST_TIMEOUT = 8  # seconds
+
+
+class WeatherAPIError(Exception):
+    """Raised for any weather-lookup failure (bad key, bad location, network, etc.)."""
+    pass
+
+
+def get_api_key():
+    """Read the OpenWeatherMap API key from Streamlit secrets or env var. Never hard-coded."""
+    key = None
+    try:
+        key = st.secrets.get("OPENWEATHER_API_KEY")
+    except Exception:
+        key = None
+    if not key:
+        key = os.environ.get("OPENWEATHER_API_KEY")
+    return key
+
+
+@st.cache_data(ttl=1800, show_spinner=False)
+def geocode_location(location_query: str, api_key: str):
+    """Convert a free-text location ('Nagpur, IN') into (lat, lon, resolved_name)."""
+    try:
+        resp = requests.get(
+            OWM_GEOCODE_URL,
+            params={"q": location_query, "limit": 1, "appid": api_key},
+            timeout=REQUEST_TIMEOUT,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except requests.RequestException as e:
+        raise WeatherAPIError(f"Could not reach the weather service ({e}).")
+
+    if not data:
+        raise WeatherAPIError(f"Location '{location_query}' was not found. Try 'City, State' or 'City, IN'.")
+
+    return data[0]["lat"], data[0]["lon"], data[0].get("name", location_query)
+
+
+@st.cache_data(ttl=600, show_spinner=False)
+def fetch_current_weather(lat: float, lon: float, api_key: str, units: str = "metric"):
+    """Fetch current temperature, humidity, rainfall, condition and wind speed."""
+    try:
+        resp = requests.get(
+            OWM_CURRENT_URL,
+            params={"lat": lat, "lon": lon, "appid": api_key, "units": units},
+            timeout=REQUEST_TIMEOUT,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except requests.RequestException as e:
+        raise WeatherAPIError(f"Could not fetch current weather ({e}).")
+
+    rain = data.get("rain", {}) or {}
+    rainfall_mm = rain.get("1h", rain.get("3h", 0.0))
+    weather_list = data.get("weather") or [{}]
+
+    return {
+        "temp": data.get("main", {}).get("temp"),
+        "humidity": data.get("main", {}).get("humidity"),
+        "rainfall_mm": rainfall_mm,
+        "condition": weather_list[0].get("description", "N/A").title(),
+        "wind_speed": data.get("wind", {}).get("speed"),
+    }
+
+
+@st.cache_data(ttl=1800, show_spinner=False)
+def fetch_forecast_summary(lat: float, lon: float, api_key: str, hours_ahead: int = 48, units: str = "metric"):
+    """
+    Fetch the 5-day/3-hour forecast and summarize the next `hours_ahead` hours:
+    average temperature, average humidity, and total expected rainfall.
+    """
+    try:
+        resp = requests.get(
+            OWM_FORECAST_URL,
+            params={"lat": lat, "lon": lon, "appid": api_key, "units": units},
+            timeout=REQUEST_TIMEOUT,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except requests.RequestException as e:
+        raise WeatherAPIError(f"Could not fetch forecast data ({e}).")
+
+    entries = data.get("list", [])
+    n = max(1, hours_ahead // 3)
+    subset = entries[:n]
+    if not subset:
+        raise WeatherAPIError("No forecast data was returned.")
+
+    avg_temp = sum(e["main"]["temp"] for e in subset) / len(subset)
+    avg_humidity = sum(e["main"]["humidity"] for e in subset) / len(subset)
+    total_rain = sum((e.get("rain", {}) or {}).get("3h", 0.0) for e in subset)
+
+    return {
+        "avg_temp": avg_temp,
+        "avg_humidity": avg_humidity,
+        "total_rainfall_mm": total_rain,
+        "hours": len(subset) * 3,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Disease <-> weather compatibility model
+# ---------------------------------------------------------------------------
+# These are general agronomic heuristics (typical published temperature and
+# humidity ranges favoring onset/spread of each disease), not a lab-calibrated
+# epidemiological model. They are used to produce a directional risk estimate
+# and an explanation grounded in the actual numbers — never a flat rule like
+# "humidity > 70% = disease will spread".
+DISEASE_WEATHER_PROFILES = {
+    "Pepper__bell___Bacterial_spot": {
+        "temp_range": (24, 30),
+        "humidity_min": 80,
+        "favors_rain": True,   # spreads via rain/irrigation splash
+    },
+    "Potato___Early_blight": {
+        "temp_range": (24, 29),
+        "humidity_min": 80,
+        "favors_rain": True,   # needs humid nights/dew, some rain helps spread
+    },
+    "Tomato_Late_blight": {
+        "temp_range": (10, 20),
+        "humidity_min": 90,
+        "favors_rain": True,   # the most rain/moisture-dependent of the three
+    },
+    "Tomato_healthy": None,
+}
+
+
+def calculate_disease_risk(disease_key, temp, humidity, rainfall_mm):
+    """
+    Score how favorable current weather is for the given disease.
+    Returns a dict with score (0-100), level (Low/Medium/High) and a
+    plain-language explanation built from the actual temp/humidity/rain values.
+    """
+    profile = DISEASE_WEATHER_PROFILES.get(disease_key)
+    if profile is None:
+        return {
+            "score": 0,
+            "level": "N/A",
+            "explanation": "No active disease was detected, so weather poses no disease-spread risk right now.",
+        }
+
+    if temp is None or humidity is None:
+        return {"score": None, "level": "Unknown", "explanation": "Weather data is incomplete, so risk could not be calculated."}
+
+    t_min, t_max = profile["temp_range"]
+    h_min = profile["humidity_min"]
+    rainfall_mm = rainfall_mm or 0.0
+
+    temp_in_range = t_min <= temp <= t_max
+    if temp_in_range:
+        temp_score = 100
+    else:
+        dist = min(abs(temp - t_min), abs(temp - t_max))
+        temp_score = max(0, 100 - dist * 8)
+
+    humidity_favorable = humidity >= h_min
+    if humidity_favorable:
+        hum_score = 100
+    else:
+        dist = h_min - humidity
+        hum_score = max(0, 100 - dist * 3)
+
+    if profile["favors_rain"]:
+        rain_score = min(100, rainfall_mm * 20)
+    else:
+        rain_score = max(0, 100 - rainfall_mm * 10)
+
+    score = round(temp_score * 0.40 + hum_score * 0.35 + rain_score * 0.25)
+
+    if score >= 70:
+        level = "High"
+    elif score >= 40:
+        level = "Medium"
+    else:
+        level = "Low"
+
+    reasons = []
+    if temp_in_range:
+        reasons.append(f"the current temperature ({temp:.1f}°C) is inside the {t_min}–{t_max}°C range this disease favors")
+    else:
+        reasons.append(f"the current temperature ({temp:.1f}°C) is outside the {t_min}–{t_max}°C range this disease prefers, which slows it down")
+
+    if humidity_favorable:
+        reasons.append(f"humidity ({humidity:.0f}%) is at or above the {h_min}% level that favors spread")
+    else:
+        reasons.append(f"humidity ({humidity:.0f}%) is below the {h_min}% level, which limits spread")
+
+    if profile["favors_rain"]:
+        if rainfall_mm > 0:
+            reasons.append(f"recent rainfall ({rainfall_mm:.1f} mm) adds moisture that helps this disease spread")
+        else:
+            reasons.append("there's no recent rainfall, so that spread pathway is currently limited")
+
+    explanation = f"Risk is {level.lower()} because " + "; ".join(reasons) + "."
+
+    return {
+        "score": score,
+        "level": level,
+        "explanation": explanation,
+        "temp_in_range": temp_in_range,
+        "humidity_favorable": humidity_favorable,
+    }
+
+
+def calculate_progression(disease_key, current_risk, forecast_summary):
+    """Build a short-term progression prediction by comparing current risk to forecast risk."""
+    profile = DISEASE_WEATHER_PROFILES.get(disease_key)
+    if profile is None:
+        return "No active disease was detected, so there is nothing to track for progression. Continue routine monitoring."
+
+    if forecast_summary is None:
+        return "Forecast data isn't available right now, so a short-term progression estimate can't be made. Re-check the plant visually every 1–2 days."
+
+    forecast_risk = calculate_disease_risk(
+        disease_key, forecast_summary["avg_temp"], forecast_summary["avg_humidity"], forecast_summary["total_rainfall_mm"]
+    )
+    cur_score = current_risk.get("score") or 0
+    fut_score = forecast_risk.get("score") or 0
+    trend = fut_score - cur_score
+    hrs = forecast_summary["hours"]
+
+    if fut_score >= 70:
+        outlook = "rapid spread to more leaves and possibly nearby plants"
+    elif fut_score >= 40:
+        outlook = "a moderate, steady spread"
+    else:
+        outlook = "slow progression"
+
+    forecast_desc = (
+        f"forecast avg {forecast_summary['avg_temp']:.1f}°C, "
+        f"{forecast_summary['avg_humidity']:.0f}% humidity, "
+        f"{forecast_summary['total_rainfall_mm']:.1f} mm rain expected"
+    )
+
+    if trend >= 15:
+        return (
+            f"Conditions are expected to become MORE favorable for the disease over the next ~{hrs} hours "
+            f"({forecast_desc}), so watch for {outlook}."
+        )
+    elif trend <= -15:
+        return (
+            f"Conditions are expected to become LESS favorable for the disease over the next ~{hrs} hours "
+            f"({forecast_desc}), which should slow disease development."
+        )
+    else:
+        return (
+            f"Conditions are expected to stay roughly similar over the next ~{hrs} hours ({forecast_desc}), "
+            f"so expect {outlook} to continue at about the current pace."
+        )
+
+
+def get_advisory(disease_key, risk_level):
+    """General, non-chemical-specific preventive advice, tailored to current risk level."""
+    if DISEASE_WEATHER_PROFILES.get(disease_key) is None:
+        return ["Continue routine field monitoring.", "Maintain good field hygiene and normal crop rotation."]
+
+    tips = [
+        "Scout the field regularly, especially lower and older leaves where symptoms often start first.",
+        "Avoid overhead irrigation when humidity is already high — water at the base of the plant instead.",
+        "Improve drainage and airflow between rows during prolonged wet weather.",
+        "Remove and destroy severely affected leaves or plant parts to reduce the source of infection.",
+        "Follow locally recommended disease-management practices for this crop.",
+    ]
+
+    if risk_level == "High":
+        tips.insert(0, "Risk is high right now — inspect the field today if possible and act without delay.")
+    elif risk_level == "Medium":
+        tips.insert(0, "Risk is moderate — plan a field check within the next couple of days.")
+    elif risk_level == "Low":
+        tips.insert(0, "Risk is low right now, but keep monitoring since weather can change quickly.")
+
+    return tips
