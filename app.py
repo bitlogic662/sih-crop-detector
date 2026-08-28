@@ -136,6 +136,7 @@ UI_TRANSLATIONS = {
         "Photo": "फोटो",
         "Detection result": "पहचान का परिणाम",
         "Unsupported image": "असमर्थित छवि",
+        "❌ Unsupported image. Please upload or capture a clear leaf image of Tomato, Potato, or Bell Pepper.": "❌ असमर्थित छवि। कृपया टमाटर, आलू या शिमला मिर्च की स्पष्ट पत्ती की तस्वीर अपलोड करें या लें।",
         "❌ This image does not appear to be a supported crop leaf image. Please upload or capture a clear photo of a supported crop leaf.": "❌ यह तस्वीर समर्थित फसल की पत्ती की तस्वीर नहीं लगती। कृपया समर्थित फसल की पत्ती की स्पष्ट तस्वीर अपलोड करें या लें।",
         "Image resolution is too low. Please upload a clearer photo.": "तस्वीर का रिज़ॉल्यूशन बहुत कम है। कृपया एक स्पष्ट फोटो अपलोड करें।",
         "Image appears too blurry or lacks visible detail. Please provide a sharp photo.": "तस्वीर बहुत धुंधली लगती है या विवरण की कमी है। कृपया एक स्पष्ट फोटो प्रदान करें।",
@@ -280,6 +281,7 @@ UI_TRANSLATIONS = {
         "Photo": "फोटो",
         "Detection result": "शोध परिणाम",
         "Unsupported image": "असमर्थित फोटो",
+        "❌ Unsupported image. Please upload or capture a clear leaf image of Tomato, Potato, or Bell Pepper.": "❌ असमर्थित फोटो. कृपया टोमॅटो, बटाटा किंवा ढोबळी मिरचीच्या पानाचा स्पष्ट फोटो अपलोड करा किंवा काढा.",
         "❌ This image does not appear to be a supported crop leaf image. Please upload or capture a clear photo of a supported crop leaf.": "❌ हा फोटो समर्थित पिकाच्या पानाचा फोटो दिसत नाही. कृपया समर्थित पिकाच्या पानाचा स्पष्ट फोटो अपलोड करा किंवा काढा.",
         "Image resolution is too low. Please upload a clearer photo.": "फोटोचे रिझोल्यूशन खूप कमी आहे. कृपया अधिक स्पष्ट फोटो अपलोड करा.",
         "Image appears too blurry or lacks visible detail. Please provide a sharp photo.": "फोटो खूप अस्पष्ट दिसतो किंवा त्यात तपशील कमी आहेत. कृपया स्पष्ट फोटो द्या.",
@@ -424,6 +426,7 @@ UI_TRANSLATIONS = {
         "Photo": "ಫೋಟೋ",
         "Detection result": "ಪತ್ತೆ ಫಲಿತಾಂಶ",
         "Unsupported image": "ಬೆಂಬಲವಿಲ್ಲದ ಚಿತ್ರ",
+        "❌ Unsupported image. Please upload or capture a clear leaf image of Tomato, Potato, or Bell Pepper.": "❌ ಬೆಂಬಲವಿಲ್ಲದ ಚಿತ್ರ. ದಯವಿಟ್ಟು ಟೊಮೇಟೊ, ಆಲೂಗಡ್ಡೆ ಅಥವಾ ದೊಡ್ಡ ಮೆಣಸಿನಕಾಯಿಯ ಎಲೆಯ ಸ್ಪಷ್ಟ ಫೋಟೋವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ ಅಥವಾ ತೆಗೆದುಕೊಳ್ಳಿ.",
         "❌ This image does not appear to be a supported crop leaf image. Please upload or capture a clear photo of a supported crop leaf.": "❌ ಈ ಚಿತ್ರವು ಬೆಂಬಲಿತ ಬೆಳೆ ಎಲೆಯ ಚಿತ್ರವಾಗಿರುವಂತೆ ಕಾಣುತ್ತಿಲ್ಲ. ದಯವಿಟ್ಟು ಬೆಂಬಲಿತ ಬೆಳೆ ಎಲೆಯ ಸ್ಪಷ್ಟ ಫೋಟೋವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ ಅಥವಾ ತೆಗೆದುಕೊಳ್ಳಿ.",
         "Image resolution is too low. Please upload a clearer photo.": "ಚಿತ್ರದ রেজಲ್ಯೂಶನ್ ತುಂಬಾ ಕಡಿಮೆಯಾಗಿದೆ. ದಯವಿಟ್ಟು ಸ್ಪಷ್ಟವಾದ ಫೋಟೋವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ.",
         "Image appears too blurry or lacks visible detail. Please provide a sharp photo.": "ಚಿತ್ರವು ತುಂಬಾ ಮಸುಕಾಗಿ ಕಾಣುತ್ತದೆ ಅಥವಾ ವಿವರಗಳ ಕೊರತೆಯಿದೆ. ದಯವಿಟ್ಟು ಸ್ಪಷ್ಟವಾದ ಫೋಟೋವನ್ನು ನೀಡಿ.",
@@ -461,26 +464,14 @@ UI_TRANSLATIONS = {
 }
 
 # Sidebar Language Selector
-LANGUAGE_OPTIONS = list(LANGUAGES.keys())  # English is always index 0 / always selectable
-
-# Ensure a valid default (English) is set on first run, and that the stored
-# selection is always one of the valid options so repeated switching
-# (English -> Kannada -> English -> Marathi -> English -> Hindi -> English ...)
-# never gets stuck or reset unexpectedly across Streamlit reruns.
-if (
-    "global_language_selector" not in st.session_state
-    or st.session_state["global_language_selector"] not in LANGUAGE_OPTIONS
-):
-    st.session_state["global_language_selector"] = LANGUAGE_OPTIONS[0]
-
 st.sidebar.markdown("### 🌐 Language / भाषा / भाषा / ಭಾಷೆ")
 selected_language = st.sidebar.selectbox(
     "Select language",
-    LANGUAGE_OPTIONS,
+    list(LANGUAGES.keys()),
     key="global_language_selector",
     label_visibility="collapsed"
 )
-CURRENT_LANG = LANGUAGES.get(selected_language, "en")
+CURRENT_LANG = LANGUAGES[selected_language]
 
 def translate(text):
     """Robust centralized text translation helper function."""
@@ -544,25 +535,25 @@ def _translated_submit(label, *args, **kwargs):
     return _original_form_submit_button(translate(label), *args, **kwargs)
 
 def _translated_selectbox(label, options, *args, **kwargs):
-    display_options = [translate(x) if isinstance(x, str) else x for x in options]
-    idx = _original_selectbox(translate(label), display_options, *args, **kwargs)
-    try:
-        val_index = display_options.index(idx)
-        return options[val_index]
-    except Exception:
-        return idx
+    # Keep the underlying widget's real options/value as the original English
+    # strings (so Streamlit's internal widget state stays stable and correct
+    # across language switches), and only translate what's shown on screen
+    # via format_func. This guarantees the return value is always the
+    # original English option, and that switching languages back and forth
+    # never loses or corrupts the selection.
+    options_list = list(options)
+    kwargs.setdefault("format_func", lambda x: translate(x) if isinstance(x, str) else x)
+    return _original_selectbox(translate(label), options_list, *args, **kwargs)
 
 def _translated_checkbox(label, *args, **kwargs):
     return _original_checkbox(translate(label), *args, **kwargs)
 
 def _translated_radio(label, options, *args, **kwargs):
-    display_options = [translate(x) if isinstance(x, str) else x for x in options]
-    res = _original_radio(translate(label), display_options, *args, **kwargs)
-    try:
-        val_index = display_options.index(res)
-        return options[val_index]
-    except Exception:
-        return res
+    # Same approach as _translated_selectbox: real options stay English,
+    # only the on-screen labels are translated via format_func.
+    options_list = list(options)
+    kwargs.setdefault("format_func", lambda x: translate(x) if isinstance(x, str) else x)
+    return _original_radio(translate(label), options_list, *args, **kwargs)
 
 def _translated_text_input(label, *args, **kwargs):
     return _original_text_input(translate(label), *args, **kwargs)
@@ -1070,33 +1061,12 @@ def validate_prediction(img, raw_preds, class_names):
         return False, "Image appears too blurry or lacks visible detail. Please provide a sharp photo.", 0.0, ""
 
     # 3. Model Prediction Confidence Threshold
-    probs = np.array(raw_preds[0], dtype=np.float64)
-    idx = int(np.argmax(probs))
-    conf = float(probs[idx]) * 100.0
+    idx = np.argmax(raw_preds[0])
+    conf = float(raw_preds[0][idx]) * 100.0
     pred_class = class_names[idx]
 
     if conf < CONFIDENCE_THRESHOLD:
-        return False, "The model is not confident enough in this image prediction. Please ensure it is a clear leaf photo.", conf, pred_class
-
-    # 4. Unsupported-subject check (person, animal, building, food, screenshot, etc.)
-    # A genuine, clearly recognized crop leaf produces a sharply "peaked" probability
-    # distribution (one class clearly ahead of the rest). Photos of subjects the model
-    # was never trained on tend to produce a much flatter / more ambiguous distribution
-    # even when the single top score happens to clear CONFIDENCE_THRESHOLD. We reuse
-    # the same probs the model already produced, so the prediction system itself is
-    # unchanged — this only adds an extra sanity check around it.
-    sorted_probs = np.sort(probs)[::-1]
-    top1 = float(sorted_probs[0])
-    top2 = float(sorted_probs[1]) if len(sorted_probs) > 1 else 0.0
-    margin = (top1 - top2) * 100.0
-
-    eps = 1e-9
-    entropy = float(-np.sum(probs * np.log(probs + eps)))
-    max_entropy = float(np.log(len(probs))) if len(probs) > 1 else 1.0
-    normalized_entropy = entropy / max_entropy if max_entropy > 0 else 0.0
-
-    if margin < 12.0 or normalized_entropy > 0.75:
-        return False, "❌ This image does not appear to be a supported crop leaf image. Please upload or capture a clear photo of a supported crop leaf.", conf, pred_class
+        return False, "❌ Unsupported image. Please upload or capture a clear leaf image of Tomato, Potato, or Bell Pepper.", conf, pred_class
 
     return True, "", conf, pred_class
 
@@ -1179,59 +1149,90 @@ else:
     if file_list:
         uploaded_files = file_list
 
-with st.form(key="farmer_info_form"):
-    st.markdown('<div class="subsection-title">📋 ' + translate("Crop Information") + '</div>', unsafe_allow_html=True)
-    f1, f2 = st.columns(2)
-    with f1:
-        crop_name = st.selectbox(
-            "Crop name",
-            ["Tomato", "Potato", "Bell Pepper", "Other / Not sure"]
-        )
-        growth_stage = st.selectbox(
-            "Crop growth stage",
-            ["Seedling", "Vegetative", "Flowering", "Fruiting", "Mature"]
-        )
-        not_sure_age = st.checkbox("Not sure about crop age")
-        if not not_sure_age:
-            crop_age = st.number_input("Approximate crop age (days)", min_value=1, max_value=365, value=45)
-        else:
-            crop_age = None
-    with f2:
-        symptom_duration = st.selectbox(
-            "How long have you noticed the symptoms?",
-            ["Less than 1 day", "1–3 days", "4–7 days", "1–2 weeks", "More than 2 weeks"]
-        )
-        field_spread = st.selectbox(
-            "How much of the crop appears affected?",
-            ["Only one/few leaves", "Less than 25%", "25–50%", "50–75%", "More than 75%"]
-        )
-        recent_weather = st.selectbox(
-            "Recent weather / field condition",
-            ["Normal", "High rainfall", "High humidity", "Very hot", "Very dry"]
-        )
+# ---------- Immediate unsupported-image / quality gate ----------
+# Runs right after images are captured/uploaded and BEFORE the Crop
+# Information form, so a farmer never has to fill in crop details for a
+# photo that can't be analyzed. Existing quality checks and the model's
+# prediction/confidence logic (validate_prediction) are reused as-is.
+any_valid_image = False
+if uploaded_files:
+    for _pc_file in uploaded_files:
+        try:
+            _pc_file.seek(0)
+            _pc_bytes = _pc_file.read()
+            _pc_file.seek(0)
+            _pc_img = Image.open(io.BytesIO(_pc_bytes)).convert('RGB')
+            _pc_resized = _pc_img.resize((224, 224))
+            _pc_arr = np.array(_pc_resized, dtype=np.float32) / 255.0
+            _pc_arr = np.expand_dims(_pc_arr, axis=0)
+            _pc_preds = model.predict(_pc_arr, verbose=0)
+            _pc_is_valid, _pc_err_msg, _pc_conf, _pc_class = validate_prediction(_pc_img, _pc_preds, class_names)
+            if _pc_is_valid:
+                any_valid_image = True
+            else:
+                st.error(f"{translate(_pc_err_msg)}  ({_pc_file.name})")
+        except UnidentifiedImageError:
+            st.error(f"{translate('Invalid or Corrupted Image')}: {_pc_file.name}")
+        except Exception:
+            st.error(f"{translate('Failed to load image file.')}: {_pc_file.name}")
 
-    st.markdown('<div class="subsection-title">🧪 ' + translate("Have you already applied any treatment?") + '</div>', unsafe_allow_html=True)
-    applied_treatment = st.radio("Have you already applied any treatment?", ["No", "Yes"], horizontal=True, label_visibility="collapsed")
-    treatment_details = ""
-    if applied_treatment == "Yes":
-        treatment_details = st.text_input("Please specify the treatment used")
+show_crop_info_form = (not uploaded_files) or any_valid_image
+submit_button = False
 
-    st.markdown('<div class="subsection-title">📜 ' + translate("Has this crop shown this disease before? (optional)") + '</div>', unsafe_allow_html=True)
-    prior_history = st.selectbox("Has this crop shown this disease before? (optional)", ["No", "Yes", "Not sure"], label_visibility="collapsed")
-    history_count = 0
-    if prior_history == "Yes":
-        history_count = st.number_input("How many times has this crop shown this disease before?", min_value=1, max_value=10, value=1)
+if show_crop_info_form:
+    with st.form(key="farmer_info_form"):
+        st.markdown('<div class="subsection-title">📋 ' + translate("Crop Information") + '</div>', unsafe_allow_html=True)
+        f1, f2 = st.columns(2)
+        with f1:
+            crop_name = st.selectbox(
+                "Crop name",
+                ["Tomato", "Potato", "Bell Pepper", "Other / Not sure"]
+            )
+            growth_stage = st.selectbox(
+                "Crop growth stage",
+                ["Seedling", "Vegetative", "Flowering", "Fruiting", "Mature"]
+            )
+            not_sure_age = st.checkbox("Not sure about crop age")
+            if not not_sure_age:
+                crop_age = st.number_input("Approximate crop age (days)", min_value=1, max_value=365, value=45)
+            else:
+                crop_age = None
+        with f2:
+            symptom_duration = st.selectbox(
+                "How long have you noticed the symptoms?",
+                ["Less than 1 day", "1–3 days", "4–7 days", "1–2 weeks", "More than 2 weeks"]
+            )
+            field_spread = st.selectbox(
+                "How much of the crop appears affected?",
+                ["Only one/few leaves", "Less than 25%", "25–50%", "50–75%", "More than 75%"]
+            )
+            recent_weather = st.selectbox(
+                "Recent weather / field condition",
+                ["Normal", "High rainfall", "High humidity", "Very hot", "Very dry"]
+            )
 
-    st.markdown('<div class="subsection-title">🌱 ' + translate("Type of soil used for growing") + '</div>', unsafe_allow_html=True)
-    soil_type = st.selectbox("Type of soil used for growing", ["Loamy soil", "Clayey soil", "Sandy soil", "Black soil (Regur)", "Red soil", "Alluvial soil"], label_visibility="collapsed")
+        st.markdown('<div class="subsection-title">🧪 ' + translate("Have you already applied any treatment?") + '</div>', unsafe_allow_html=True)
+        applied_treatment = st.radio("Have you already applied any treatment?", ["No", "Yes"], horizontal=True, label_visibility="collapsed")
+        treatment_details = ""
+        if applied_treatment == "Yes":
+            treatment_details = st.text_input("Please specify the treatment used")
 
-    c_loc1, c_loc2 = st.columns(2)
-    with c_loc1:
-        village = st.text_input("Village / City (optional)")
-    with c_loc2:
-        district = st.text_input("District (optional)")
+        st.markdown('<div class="subsection-title">📜 ' + translate("Has this crop shown this disease before? (optional)") + '</div>', unsafe_allow_html=True)
+        prior_history = st.selectbox("Has this crop shown this disease before? (optional)", ["No", "Yes", "Not sure"], label_visibility="collapsed")
+        history_count = 0
+        if prior_history == "Yes":
+            history_count = st.number_input("How many times has this crop shown this disease before?", min_value=1, max_value=10, value=1)
 
-    submit_button = st.form_submit_button(label="🔍 " + translate("Analyze All Photos"))
+        st.markdown('<div class="subsection-title">🌱 ' + translate("Type of soil used for growing") + '</div>', unsafe_allow_html=True)
+        soil_type = st.selectbox("Type of soil used for growing", ["Loamy soil", "Clayey soil", "Sandy soil", "Black soil (Regur)", "Red soil", "Alluvial soil"], label_visibility="collapsed")
+
+        c_loc1, c_loc2 = st.columns(2)
+        with c_loc1:
+            village = st.text_input("Village / City (optional)")
+        with c_loc2:
+            district = st.text_input("District (optional)")
+
+        submit_button = st.form_submit_button(label="🔍 " + translate("Analyze All Photos"))
 
 if submit_button:
     if not uploaded_files:
