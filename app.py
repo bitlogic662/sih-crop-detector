@@ -13,6 +13,223 @@ st.set_page_config(
     layout="wide"
 )
 
+# ---------- MULTI-LANGUAGE UI SUPPORT ----------
+# The AI/model logic below remains unchanged. This layer translates only
+# user-visible interface text while keeping internal values in English so
+# existing prediction/severity/weather logic continues to work.
+LANGUAGES = {
+    "English": "en",
+    "हिंदी (Hindi)": "hi",
+    "मराठी (Marathi)": "mr",
+    "ಕನ್ನಡ (Kannada)": "kn",
+}
+
+UI_TRANSLATIONS = {
+    "en": {},
+    "hi": {
+        "Early Detection & Management of Crop Diseases and Pest Infestations": "फसल रोगों और कीट प्रकोप की शीघ्र पहचान और प्रबंधन",
+        "Crops covered": "कवर की गई फसलें", "Model accuracy": "मॉडल की सटीकता", "Languages": "भाषाएँ", "Field-ready design": "खेत के लिए तैयार डिज़ाइन",
+        "How it works": "यह कैसे काम करता है", "Snap photos": "📷 फोटो लें", "Take clear photos of the affected leaves": "प्रभावित पत्तियों की साफ तस्वीरें लें",
+        "AI analyzes": "🧠 AI विश्लेषण करता है", "On-device model detects disease instantly": "डिवाइस पर मॉडल तुरंत रोग का पता लगाता है",
+        "Get advice": "🗣️ सलाह प्राप्त करें", "Hear treatment steps in your language": "अपनी भाषा में उपचार के चरण सुनें",
+        "Scan crop leaves": "फसल की पत्तियाँ स्कैन करें", "Drag one or more leaf photos below, or click to browse": "नीचे एक या अधिक पत्तियों की तस्वीरें डालें या ब्राउज़ करने के लिए क्लिक करें",
+        "Crop Information": "फसल की जानकारी", "Crop name": "फसल का नाम", "Crop growth stage": "फसल की वृद्धि अवस्था",
+        "Not sure about crop age": "फसल की आयु के बारे में निश्चित नहीं", "Approximate crop age (days)": "फसल की अनुमानित आयु (दिन)",
+        "How long have you noticed the symptoms?": "आपने लक्षण कितने समय से देखे हैं?", "How much of the crop appears affected?": "फसल का कितना हिस्सा प्रभावित दिखाई देता है?",
+        "Recent weather / field condition": "हाल की मौसम / खेत की स्थिति", "Have you already applied any treatment?": "क्या आपने पहले से कोई उपचार किया है?",
+        "Please specify the treatment used": "कृपया इस्तेमाल किए गए उपचार का विवरण दें", "Has this crop shown this disease before? (optional)": "क्या इस फसल में पहले भी यह रोग हुआ है? (वैकल्पिक)",
+        "How many times has this crop shown this disease before?": "इस फसल में यह रोग पहले कितनी बार हुआ है?", "Type of soil used for growing": "उगाने के लिए इस्तेमाल की गई मिट्टी का प्रकार",
+        "Village / City (optional)": "गाँव / शहर (वैकल्पिक)", "District (optional)": "जिला (वैकल्पिक)", "Analyze All Photos": "सभी तस्वीरों का विश्लेषण करें",
+        "Individual Photo Results": "व्यक्तिगत फोटो परिणाम", "Overall Crop Health Assessment": "फसल स्वास्थ्य का समग्र मूल्यांकन", "Farmer Information": "किसान की जानकारी",
+        "Detailed Recommendation": "विस्तृत सुझाव", "Recommended Action": "अनुशंसित कार्रवाई", "Treatment": "उपचार", "Weather Risk": "मौसम का जोखिम",
+        "How Quickly Should You Act?": "आपको कितनी जल्दी कार्रवाई करनी चाहिए?", "Important Precaution": "महत्वपूर्ण सावधानी", "Voice Summary": "आवाज़ में सारांश",
+        "Farmer helpline & support": "किसान हेल्पलाइन और सहायता", "Expanding crop coverage": "फसल कवरेज का विस्तार",
+        "Listen to this result": "इस परिणाम को सुनें", "Listen to full recommendation summary": "पूरी अनुशंसा सुनें",
+        "Photos analyzed": "विश्लेषित तस्वीरें", "Affected photos": "प्रभावित तस्वीरें", "Healthy photos": "स्वस्थ तस्वीरें", "Avg. confidence": "औसत विश्वास स्तर", "Overall risk": "कुल जोखिम",
+        "Confidence": "विश्वास स्तर", "Severity": "गंभीरता", "Progression": "प्रगति", "Crop health": "फसल स्वास्थ्य", "Healthy": "स्वस्थ", "Moderate risk": "मध्यम जोखिम", "Severe — act now": "गंभीर — अभी कार्रवाई करें",
+        "No disease detected": "कोई रोग नहीं पाया गया", "Low Risk": "कम जोखिम", "Moderate Risk": "मध्यम जोखिम", "High Risk": "उच्च जोखिम",
+        "Preventive care": "रोकथाम संबंधी देखभाल", "Act immediately": "तुरंत कार्रवाई करें", "Act within 1–2 days": "1–2 दिनों के भीतर कार्रवाई करें", "Monitor closely": "ध्यान से निगरानी करें",
+        "No": "नहीं", "Yes": "हाँ", "Not sure": "निश्चित नहीं", "Normal": "सामान्य", "High rainfall": "अधिक वर्षा", "High humidity": "अधिक आर्द्रता", "Very hot": "बहुत गर्म", "Very dry": "बहुत शुष्क",
+        "Less than 1 day": "1 दिन से कम", "1–3 days": "1–3 दिन", "4–7 days": "4–7 दिन", "1–2 weeks": "1–2 सप्ताह", "More than 2 weeks": "2 सप्ताह से अधिक",
+        "Only one/few leaves": "केवल एक/कुछ पत्तियाँ", "Less than 25%": "25% से कम", "25–50%": "25–50%", "50–75%": "50–75%", "More than 75%": "75% से अधिक",
+        "Tomato": "टमाटर", "Potato": "आलू", "Bell Pepper": "शिमला मिर्च", "Other / Not sure": "अन्य / निश्चित नहीं",
+        "Seedling": "अंकुर अवस्था", "Vegetative": "वानस्पतिक अवस्था", "Flowering": "फूल अवस्था", "Fruiting": "फल अवस्था", "Mature": "परिपक्व अवस्था",
+        "Loamy soil": "दोमट मिट्टी", "Clayey soil": "चिकनी मिट्टी", "Sandy soil": "बलुई मिट्टी", "Black soil (Regur)": "काली मिट्टी (रेगुर)", "Red soil": "लाल मिट्टी", "Alluvial soil": "जलोढ़ मिट्टी",
+    },
+    "mr": {
+        "Early Detection & Management of Crop Diseases and Pest Infestations": "पिकांचे रोग आणि किडींचा लवकर शोध व व्यवस्थापन",
+        "Crops covered": "समाविष्ट पिके", "Model accuracy": "मॉडेल अचूकता", "Languages": "भाषा", "Field-ready design": "शेतासाठी तयार डिझाइन",
+        "How it works": "हे कसे कार्य करते", "Snap photos": "📷 फोटो काढा", "Take clear photos of the affected leaves": "प्रभावित पानांचे स्पष्ट फोटो काढा",
+        "AI analyzes": "🧠 AI विश्लेषण करते", "On-device model detects disease instantly": "डिव्हाइसवरील मॉडेल रोगाचा त्वरित शोध घेते",
+        "Get advice": "🗣️ सल्ला मिळवा", "Hear treatment steps in your language": "आपल्या भाषेत उपचाराच्या सूचना ऐका",
+        "Scan crop leaves": "पिकांची पाने स्कॅन करा", "Drag one or more leaf photos below, or click to browse": "खाली एक किंवा अधिक पानांचे फोटो टाका किंवा ब्राउझ करण्यासाठी क्लिक करा",
+        "Crop Information": "पिकाची माहिती", "Crop name": "पिकाचे नाव", "Crop growth stage": "पिकाची वाढीची अवस्था",
+        "Not sure about crop age": "पिकाच्या वयाबद्दल खात्री नाही", "Approximate crop age (days)": "पिकाचे अंदाजे वय (दिवस)",
+        "How long have you noticed the symptoms?": "लक्षणे किती दिवसांपासून दिसत आहेत?", "How much of the crop appears affected?": "पिकाचा किती भाग प्रभावित दिसतो?",
+        "Recent weather / field condition": "अलीकडील हवामान / शेताची स्थिती", "Have you already applied any treatment?": "तुम्ही आधीच काही उपचार केले आहेत का?",
+        "Please specify the treatment used": "वापरलेल्या उपचाराचे नाव द्या", "Has this crop shown this disease before? (optional)": "या पिकाला यापूर्वी हा रोग झाला आहे का? (पर्यायी)",
+        "How many times has this crop shown this disease before?": "या पिकाला हा रोग यापूर्वी किती वेळा झाला आहे?", "Type of soil used for growing": "पिकासाठी वापरलेल्या मातीचा प्रकार",
+        "Village / City (optional)": "गाव / शहर (पर्यायी)", "District (optional)": "जिल्हा (पर्यायी)", "Analyze All Photos": "सर्व फोटोंचे विश्लेषण करा",
+        "Individual Photo Results": "वैयक्तिक फोटो परिणाम", "Overall Crop Health Assessment": "पिकाच्या आरोग्याचे एकूण मूल्यांकन", "Farmer Information": "शेतकऱ्याची माहिती",
+        "Detailed Recommendation": "सविस्तर शिफारस", "Recommended Action": "शिफारस केलेली कृती", "Treatment": "उपचार", "Weather Risk": "हवामानाचा धोका",
+        "How Quickly Should You Act?": "किती लवकर कृती करावी?", "Important Precaution": "महत्त्वाची खबरदारी", "Voice Summary": "आवाजातील सारांश",
+        "Farmer helpline & support": "शेतकरी हेल्पलाइन आणि मदत", "Expanding crop coverage": "पिकांचा विस्तार",
+        "Listen to this result": "हा परिणाम ऐका", "Listen to full recommendation summary": "संपूर्ण शिफारस ऐका",
+        "Photos analyzed": "विश्लेषित फोटो", "Affected photos": "प्रभावित फोटो", "Healthy photos": "निरोगी फोटो", "Avg. confidence": "सरासरी विश्वास", "Overall risk": "एकूण धोका",
+        "Confidence": "विश्वास", "Severity": "तीव्रता", "Progression": "प्रगती", "Crop health": "पिकाचे आरोग्य", "Healthy": "निरोगी", "Moderate risk": "मध्यम धोका", "Severe — act now": "गंभीर — त्वरित कृती करा",
+        "No disease detected": "कोणताही रोग आढळला नाही", "Low Risk": "कमी धोका", "Moderate Risk": "मध्यम धोका", "High Risk": "जास्त धोका",
+        "Preventive care": "प्रतिबंधात्मक काळजी", "Act immediately": "त्वरित कृती करा", "Act within 1–2 days": "1–2 दिवसांत कृती करा", "Monitor closely": "लक्षपूर्वक निरीक्षण करा",
+        "No": "नाही", "Yes": "होय", "Not sure": "खात्री नाही", "Normal": "सामान्य", "High rainfall": "जास्त पाऊस", "High humidity": "जास्त आर्द्रता", "Very hot": "खूप उष्ण", "Very dry": "खूप कोरडे",
+        "Less than 1 day": "1 दिवसापेक्षा कमी", "1–3 days": "1–3 दिवस", "4–7 days": "4–7 दिवस", "1–2 weeks": "1–2 आठवडे", "More than 2 weeks": "2 आठवड्यांपेक्षा जास्त",
+        "Only one/few leaves": "फक्त एक/काही पाने", "Less than 25%": "25% पेक्षा कमी", "More than 75%": "75% पेक्षा जास्त",
+        "Tomato": "टोमॅटो", "Potato": "बटाटा", "Bell Pepper": "ढोबळी मिरची", "Other / Not sure": "इतर / खात्री नाही",
+        "Seedling": "रोप अवस्था", "Vegetative": "शाकीय अवस्था", "Flowering": "फुलोरा अवस्था", "Fruiting": "फळधारणा अवस्था", "Mature": "परिपक्व अवस्था",
+        "Loamy soil": "गाळाची माती", "Clayey soil": "चिकणमाती", "Sandy soil": "वालुकामय माती", "Black soil (Regur)": "काळी माती (रेगूर)", "Red soil": "लाल माती", "Alluvial soil": "गाळाची माती",
+    },
+    "kn": {
+        "Early Detection & Management of Crop Diseases and Pest Infestations": "ಬೆಳೆ ರೋಗಗಳು ಮತ್ತು ಕೀಟ ಬಾಧೆಗಳ ಆರಂಭಿಕ ಪತ್ತೆ ಮತ್ತು ನಿರ್ವಹಣೆ",
+        "Crops covered": "ಒಳಗೊಂಡ ಬೆಳೆಗಳು", "Model accuracy": "ಮಾದರಿ ನಿಖರತೆ", "Languages": "ಭಾಷೆಗಳು", "Field-ready design": "ಹೊಲಕ್ಕೆ ಸಿದ್ಧ ವಿನ್ಯಾಸ",
+        "How it works": "ಇದು ಹೇಗೆ ಕೆಲಸ ಮಾಡುತ್ತದೆ", "Snap photos": "📷 ಫೋಟೋ ತೆಗೆದುಕೊಳ್ಳಿ", "Take clear photos of the affected leaves": "ಬಾಧಿತ ಎಲೆಗಳ ಸ್ಪಷ್ಟ ಫೋಟೋಗಳನ್ನು ತೆಗೆದುಕೊಳ್ಳಿ",
+        "AI analyzes": "🧠 AI ವಿಶ್ಲೇಷಿಸುತ್ತದೆ", "On-device model detects disease instantly": "ಸಾಧನದಲ್ಲಿರುವ ಮಾದರಿ ರೋಗವನ್ನು ತಕ್ಷಣ ಪತ್ತೆಹಚ್ಚುತ್ತದೆ",
+        "Get advice": "🗣️ ಸಲಹೆ ಪಡೆಯಿರಿ", "Hear treatment steps in your language": "ನಿಮ್ಮ ಭಾಷೆಯಲ್ಲಿ ಚಿಕಿತ್ಸಾ ಕ್ರಮಗಳನ್ನು ಕೇಳಿ",
+        "Scan crop leaves": "ಬೆಳೆ ಎಲೆಗಳನ್ನು ಸ್ಕ್ಯಾನ್ ಮಾಡಿ", "Drag one or more leaf photos below, or click to browse": "ಕೆಳಗೆ ಒಂದು ಅಥವಾ ಹೆಚ್ಚಿನ ಎಲೆಗಳ ಫೋಟೋಗಳನ್ನು ಹಾಕಿ ಅಥವಾ ಬ್ರೌಸ್ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ",
+        "Crop Information": "ಬೆಳೆ ಮಾಹಿತಿ", "Crop name": "ಬೆಳೆಯ ಹೆಸರು", "Crop growth stage": "ಬೆಳೆಯ ಬೆಳವಣಿಗೆಯ ಹಂತ",
+        "Not sure about crop age": "ಬೆಳೆಯ ವಯಸ್ಸಿನ ಬಗ್ಗೆ ಖಚಿತವಿಲ್ಲ", "Approximate crop age (days)": "ಬೆಳೆಯ ಅಂದಾಜು ವಯಸ್ಸು (ದಿನಗಳು)",
+        "How long have you noticed the symptoms?": "ರೋಗಲಕ್ಷಣಗಳು ಎಷ್ಟು ಸಮಯದಿಂದ ಕಾಣಿಸುತ್ತಿವೆ?", "How much of the crop appears affected?": "ಬೆಳೆಯ ಎಷ್ಟು ಭಾಗ ಬಾಧಿತವಾಗಿದೆ?",
+        "Recent weather / field condition": "ಇತ್ತೀಚಿನ ಹವಾಮಾನ / ಹೊಲದ ಪರಿಸ್ಥಿತಿ", "Have you already applied any treatment?": "ನೀವು ಈಗಾಗಲೇ ಯಾವುದೇ ಚಿಕಿತ್ಸೆ ನೀಡಿದ್ದೀರಾ?",
+        "Please specify the treatment used": "ಬಳಸಿದ ಚಿಕಿತ್ಸೆಯನ್ನು ನಮೂದಿಸಿ", "Has this crop shown this disease before? (optional)": "ಈ ಬೆಳೆಗೆ ಈ ರೋಗವು ಹಿಂದೆ ಕಾಣಿಸಿಕೊಂಡಿದೆಯೇ? (ಐಚ್ಛಿಕ)",
+        "How many times has this crop shown this disease before?": "ಈ ಬೆಳೆಗೆ ಈ ರೋಗವು ಹಿಂದೆ ಎಷ್ಟು ಬಾರಿ ಕಾಣಿಸಿಕೊಂಡಿದೆ?", "Type of soil used for growing": "ಬೆಳೆಯಲು ಬಳಸಿದ ಮಣ್ಣಿನ ವಿಧ",
+        "Village / City (optional)": "ಗ್ರಾಮ / ನಗರ (ಐಚ್ಛಿಕ)", "District (optional)": "ಜಿಲ್ಲೆ (ಐಚ್ಛಿಕ)", "Analyze All Photos": "ಎಲ್ಲಾ ಫೋಟೋಗಳನ್ನು ವಿಶ್ಲೇಷಿಸಿ",
+        "Individual Photo Results": "ವೈಯಕ್ತಿಕ ಫೋಟೋ ಫಲಿತಾಂಶಗಳು", "Overall Crop Health Assessment": "ಒಟ್ಟಾರೆ ಬೆಳೆ ಆರೋಗ್ಯ ಮೌಲ್ಯಮಾಪನ", "Farmer Information": "ರೈತರ ಮಾಹಿತಿ",
+        "Detailed Recommendation": "ವಿವರವಾದ ಶಿಫಾರಸು", "Recommended Action": "ಶಿಫಾರಸು ಮಾಡಿದ ಕ್ರಮ", "Treatment": "ಚಿಕಿತ್ಸೆ", "Weather Risk": "ಹವಾಮಾನ ಅಪಾಯ",
+        "How Quickly Should You Act?": "ಎಷ್ಟು ಬೇಗ ಕ್ರಮ ಕೈಗೊಳ್ಳಬೇಕು?", "Important Precaution": "ಪ್ರಮುಖ ಮುನ್ನೆಚ್ಚರಿಕೆ", "Voice Summary": "ಧ್ವನಿ ಸಾರಾಂಶ",
+        "Farmer helpline & support": "ರೈತರ ಸಹಾಯವಾಣಿ ಮತ್ತು ಬೆಂಬಲ", "Expanding crop coverage": "ಬೆಳೆ ವ್ಯಾಪ್ತಿಯ ವಿಸ್ತರಣೆ",
+        "Listen to this result": "ಈ ಫಲಿತಾಂಶವನ್ನು ಆಲಿಸಿ", "Listen to full recommendation summary": "ಸಂಪೂರ್ಣ ಶಿಫಾರಸನ್ನು ಆಲಿಸಿ",
+        "Photos analyzed": "ವಿಶ್ಲೇಷಿಸಿದ ಫೋಟೋಗಳು", "Affected photos": "ಬಾಧಿತ ಫೋಟೋಗಳು", "Healthy photos": "ಆರೋಗ್ಯಕರ ಫೋಟೋಗಳು", "Avg. confidence": "ಸರಾಸರಿ ವಿಶ್ವಾಸ", "Overall risk": "ಒಟ್ಟಾರೆ ಅಪಾಯ",
+        "Confidence": "ವಿಶ್ವಾಸ", "Severity": "ತೀವ್ರತೆ", "Progression": "ಪ್ರಗತಿ", "Crop health": "ಬೆಳೆ ಆರೋಗ್ಯ", "Healthy": "ಆರೋಗ್ಯಕರ", "Moderate risk": "ಮಧ್ಯಮ ಅಪಾಯ", "Severe — act now": "ತೀವ್ರ — ಈಗಲೇ ಕ್ರಮ ಕೈಗೊಳ್ಳಿ",
+        "No disease detected": "ಯಾವುದೇ ರೋಗ ಪತ್ತೆಯಾಗಿಲ್ಲ", "Low Risk": "ಕಡಿಮೆ ಅಪಾಯ", "Moderate Risk": "ಮಧ್ಯಮ ಅಪಾಯ", "High Risk": "ಹೆಚ್ಚಿನ ಅಪಾಯ",
+        "Preventive care": "ತಡೆಗಟ್ಟುವ ಆರೈಕೆ", "Act immediately": "ತಕ್ಷಣ ಕ್ರಮ ಕೈಗೊಳ್ಳಿ", "Act within 1–2 days": "1–2 ದಿನಗಳಲ್ಲಿ ಕ್ರಮ ಕೈಗೊಳ್ಳಿ", "Monitor closely": "ನಿಕಟವಾಗಿ ಮೇಲ್ವಿಚಾರಣೆ ಮಾಡಿ",
+        "No": "ಇಲ್ಲ", "Yes": "ಹೌದು", "Not sure": "ಖಚಿತವಿಲ್ಲ", "Normal": "ಸಾಮಾನ್ಯ", "High rainfall": "ಹೆಚ್ಚಿನ ಮಳೆ", "High humidity": "ಹೆಚ್ಚಿನ ತೇವಾಂಶ", "Very hot": "ತುಂಬಾ ಬಿಸಿ", "Very dry": "ತುಂಬಾ ಒಣ",
+        "Less than 1 day": "1 ದಿನಕ್ಕಿಂತ ಕಡಿಮೆ", "1–3 days": "1–3 ದಿನಗಳು", "4–7 days": "4–7 ದಿನಗಳು", "1–2 weeks": "1–2 ವಾರಗಳು", "More than 2 weeks": "2 ವಾರಗಳಿಗಿಂತ ಹೆಚ್ಚು",
+        "Only one/few leaves": "ಒಂದು/ಕೆಲವು ಎಲೆಗಳು ಮಾತ್ರ", "Less than 25%": "25% ಕ್ಕಿಂತ ಕಡಿಮೆ", "More than 75%": "75% ಕ್ಕಿಂತ ಹೆಚ್ಚು",
+        "Tomato": "ಟೊಮೇಟೊ", "Potato": "ಆಲೂಗಡ್ಡೆ", "Bell Pepper": "ದೊಡ್ಡ ಮೆಣಸಿನಕಾಯಿ", "Other / Not sure": "ಇತರೆ / ಖಚಿತವಿಲ್ಲ",
+        "Seedling": "ಸಸಿ ಹಂತ", "Vegetative": "ಸಸ್ಯೀಯ ಹಂತ", "Flowering": "ಹೂ ಬಿಡುವ ಹಂತ", "Fruiting": "ಹಣ್ಣು ಬಿಡುವ ಹಂತ", "Mature": "ಪಕ್ವ ಹಂತ",
+        "Loamy soil": "ಲೋಮಿ ಮಣ್ಣು", "Clayey soil": "ಜೇಡಿ ಮಣ್ಣು", "Sandy soil": "ಮರಳು ಮಣ್ಣು", "Black soil (Regur)": "ಕಪ್ಪು ಮಣ್ಣು (ರೆಗರ್)", "Red soil": "ಕೆಂಪು ಮಣ್ಣು", "Alluvial soil": "ಜಲೋಢ ಮಣ್ಣು",
+    },
+}
+
+# Put the selector in the sidebar so it remains visible while scrolling.
+st.sidebar.markdown("### 🌐 Language / भाषा / भाषा / ಭಾಷೆ")
+selected_language = st.sidebar.selectbox(
+    "Select language",
+    list(LANGUAGES.keys()),
+    key="global_language_selector",
+    label_visibility="collapsed"
+)
+CURRENT_LANG = LANGUAGES[selected_language]
+
+# Translation helper used by the UI wrappers below.
+def _translate_text(text):
+    if not isinstance(text, str) or CURRENT_LANG == "en":
+        return text
+    out = text
+    table = UI_TRANSLATIONS.get(CURRENT_LANG, {})
+    # Longest first prevents short phrases from changing part of a longer phrase.
+    for source, target in sorted(table.items(), key=lambda x: len(x[0]), reverse=True):
+        out = out.replace(source, target)
+    return out
+
+# Translate only presentation text. Internal option values are intentionally
+# preserved so the existing prediction and recommendation logic does not break.
+_original_markdown = st.markdown
+_original_caption = st.caption
+_original_info = st.info
+_original_warning = st.warning
+_original_error = st.error
+_original_success = st.success
+_original_write = st.write
+_original_button = st.button
+_original_form_submit_button = st.form_submit_button
+_original_selectbox = st.selectbox
+_original_checkbox = st.checkbox
+_original_radio = st.radio
+_original_text_input = st.text_input
+_original_number_input = st.number_input
+_original_file_uploader = st.file_uploader
+_original_spinner = st.spinner
+
+
+def _translated_markdown(body, *args, **kwargs):
+    return _original_markdown(_translate_text(body), *args, **kwargs)
+
+def _translated_caption(body, *args, **kwargs):
+    return _original_caption(_translate_text(body), *args, **kwargs)
+
+def _translated_info(body, *args, **kwargs):
+    return _original_info(_translate_text(body), *args, **kwargs)
+
+def _translated_warning(body, *args, **kwargs):
+    return _original_warning(_translate_text(body), *args, **kwargs)
+
+def _translated_error(body, *args, **kwargs):
+    return _original_error(_translate_text(body), *args, **kwargs)
+
+def _translated_success(body, *args, **kwargs):
+    return _original_success(_translate_text(body), *args, **kwargs)
+
+def _translated_write(*args, **kwargs):
+    translated = [_translate_text(x) if isinstance(x, str) else x for x in args]
+    return _original_write(*translated, **kwargs)
+
+def _translated_button(label, *args, **kwargs):
+    return _original_button(_translate_text(label), *args, **kwargs)
+
+def _translated_submit(label, *args, **kwargs):
+    return _original_form_submit_button(_translate_text(label), *args, **kwargs)
+
+def _translated_selectbox(label, options, *args, **kwargs):
+    # Keep option values unchanged for the application logic, but translate
+    # the labels displayed to the farmer.
+    display_options = [_translate_text(x) if isinstance(x, str) else x for x in options]
+    return _original_selectbox(_translate_text(label), display_options, *args, **kwargs)
+
+def _translated_checkbox(label, *args, **kwargs):
+    return _original_checkbox(_translate_text(label), *args, **kwargs)
+
+def _translated_radio(label, options, *args, **kwargs):
+    # Radio values are used by the application, so preserve them.
+    return _original_radio(_translate_text(label), options, *args, **kwargs)
+
+def _translated_text_input(label, *args, **kwargs):
+    return _original_text_input(_translate_text(label), *args, **kwargs)
+
+def _translated_number_input(label, *args, **kwargs):
+    return _original_number_input(_translate_text(label), *args, **kwargs)
+
+def _translated_file_uploader(label, *args, **kwargs):
+    return _original_file_uploader(_translate_text(label), *args, **kwargs)
+
+def _translated_spinner(text="Working...", *args, **kwargs):
+    return _original_spinner(_translate_text(text), *args, **kwargs)
+
+st.markdown = _translated_markdown
+st.caption = _translated_caption
+st.info = _translated_info
+st.warning = _translated_warning
+st.error = _translated_error
+st.success = _translated_success
+st.write = _translated_write
+st.button = _translated_button
+st.form_submit_button = _translated_submit
+st.selectbox = _translated_selectbox
+st.checkbox = _translated_checkbox
+st.radio = _translated_radio
+st.text_input = _translated_text_input
+st.number_input = _translated_number_input
+st.file_uploader = _translated_file_uploader
+st.spinner = _translated_spinner
+
+
 # ---------- Custom styling ----------
 st.markdown("""
     <style>
@@ -1283,7 +1500,8 @@ if st.session_state.analysis_results:
         "मराठी (Marathi)": ("mr", "treatment_mr"),
         "ಕನ್ನಡ (Kannada)": ("kn", "treatment_kn"),
     }
-    lang_choice = st.selectbox("🌐 Voice / advisory language", list(lang_map.keys()))
+    # Reuse the single global language selector for advisory and voice output.
+    lang_choice = selected_language
 
     st.caption("AI predictions are advisory and should be verified with an agricultural expert when necessary. "
                "This tool does not claim 100% accuracy, and severity/progression figures are AI-based estimates, "
