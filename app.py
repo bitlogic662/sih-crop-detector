@@ -69,7 +69,6 @@ UI_TRANSLATIONS = {
         "Detailed Recommendation": "विस्तृत सुझाव",
         "Recommended Action": "अनुशंसित कार्रवाई",
         "Treatment": "उपचार",
-        "Required Quantity": "आवश्यक मात्रा",
         "Weather Risk": "मौसम का जोखिम",
         "How Quickly Should You Act?": "आपको कितनी जल्दी कार्रवाई करनी चाहिए?",
         "Important Precaution": "महत्वपूर्ण सावधानी",
@@ -137,6 +136,7 @@ UI_TRANSLATIONS = {
         "Photo": "फोटो",
         "Detection result": "पहचान का परिणाम",
         "Unsupported image": "असमर्थित छवि",
+        "❌ Unsupported image. Please upload or capture a clear leaf image of Tomato, Potato, or Bell Pepper.": "❌ असमर्थित छवि। कृपया टमाटर, आलू या शिमला मिर्च की स्पष्ट पत्ती की तस्वीर अपलोड करें या लें।",
         "❌ This image does not appear to be a supported crop leaf image. Please upload or capture a clear photo of a supported crop leaf.": "❌ यह तस्वीर समर्थित फसल की पत्ती की तस्वीर नहीं लगती। कृपया समर्थित फसल की पत्ती की स्पष्ट तस्वीर अपलोड करें या लें।",
         "Image resolution is too low. Please upload a clearer photo.": "तस्वीर का रिज़ॉल्यूशन बहुत कम है। कृपया एक स्पष्ट फोटो अपलोड करें।",
         "Image appears too blurry or lacks visible detail. Please provide a sharp photo.": "तस्वीर बहुत धुंधली लगती है या विवरण की कमी है। कृपया एक स्पष्ट फोटो प्रदान करें।",
@@ -214,7 +214,6 @@ UI_TRANSLATIONS = {
         "Detailed Recommendation": "सविस्तर शिफारस",
         "Recommended Action": "शिफारस केलेली कृती",
         "Treatment": "उपचार",
-        "Required Quantity": "आवश्यक प्रमाण",
         "Weather Risk": "हवामानाचा धोका",
         "How Quickly Should You Act?": "किती लवकर कृती करावी?",
         "Important Precaution": "महत्त्वाची खबरदारी",
@@ -282,6 +281,7 @@ UI_TRANSLATIONS = {
         "Photo": "फोटो",
         "Detection result": "शोध परिणाम",
         "Unsupported image": "असमर्थित फोटो",
+        "❌ Unsupported image. Please upload or capture a clear leaf image of Tomato, Potato, or Bell Pepper.": "❌ असमर्थित फोटो. कृपया टोमॅटो, बटाटा किंवा ढोबळी मिरचीच्या पानाचा स्पष्ट फोटो अपलोड करा किंवा काढा.",
         "❌ This image does not appear to be a supported crop leaf image. Please upload or capture a clear photo of a supported crop leaf.": "❌ हा फोटो समर्थित पिकाच्या पानाचा फोटो दिसत नाही. कृपया समर्थित पिकाच्या पानाचा स्पष्ट फोटो अपलोड करा किंवा काढा.",
         "Image resolution is too low. Please upload a clearer photo.": "फोटोचे रिझोल्यूशन खूप कमी आहे. कृपया अधिक स्पष्ट फोटो अपलोड करा.",
         "Image appears too blurry or lacks visible detail. Please provide a sharp photo.": "फोटो खूप अस्पष्ट दिसतो किंवा त्यात तपशील कमी आहेत. कृपया स्पष्ट फोटो द्या.",
@@ -359,7 +359,6 @@ UI_TRANSLATIONS = {
         "Detailed Recommendation": "ವಿವರವಾದ ಶಿಫಾರಸು",
         "Recommended Action": "ಶಿಫಾರಸು ಮಾಡಿದ ಕ್ರಮ",
         "Treatment": "ಚಿಕಿತ್ಸೆ",
-        "Required Quantity": "ಅಗತ್ಯವಿರುವ ಪ್ರಮಾಣ",
         "Weather Risk": "ಹವಾಮಾನ ಅಪಾಯ",
         "How Quickly Should You Act?": "ಎಷ್ಟು ಬೇಗ ಕ್ರಮ ಕೈಗೊಳ್ಳಬೇಕು?",
         "Important Precaution": "ಪ್ರಮುಖ ಮುನ್ನೆಚ್ಚರಿಕೆ",
@@ -427,6 +426,7 @@ UI_TRANSLATIONS = {
         "Photo": "ಫೋಟೋ",
         "Detection result": "ಪತ್ತೆ ಫಲಿತಾಂಶ",
         "Unsupported image": "ಬೆಂಬಲವಿಲ್ಲದ ಚಿತ್ರ",
+        "❌ Unsupported image. Please upload or capture a clear leaf image of Tomato, Potato, or Bell Pepper.": "❌ ಬೆಂಬಲವಿಲ್ಲದ ಚಿತ್ರ. ದಯವಿಟ್ಟು ಟೊಮೇಟೊ, ಆಲೂಗಡ್ಡೆ ಅಥವಾ ದೊಡ್ಡ ಮೆಣಸಿನಕಾಯಿಯ ಎಲೆಯ ಸ್ಪಷ್ಟ ಫೋಟೋವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ ಅಥವಾ ತೆಗೆದುಕೊಳ್ಳಿ.",
         "❌ This image does not appear to be a supported crop leaf image. Please upload or capture a clear photo of a supported crop leaf.": "❌ ಈ ಚಿತ್ರವು ಬೆಂಬಲಿತ ಬೆಳೆ ಎಲೆಯ ಚಿತ್ರವಾಗಿರುವಂತೆ ಕಾಣುತ್ತಿಲ್ಲ. ದಯವಿಟ್ಟು ಬೆಂಬಲಿತ ಬೆಳೆ ಎಲೆಯ ಸ್ಪಷ್ಟ ಫೋಟೋವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ ಅಥವಾ ತೆಗೆದುಕೊಳ್ಳಿ.",
         "Image resolution is too low. Please upload a clearer photo.": "ಚಿತ್ರದ রেজಲ್ಯೂಶನ್ ತುಂಬಾ ಕಡಿಮೆಯಾಗಿದೆ. ದಯವಿಟ್ಟು ಸ್ಪಷ್ಟವಾದ ಫೋಟೋವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ.",
         "Image appears too blurry or lacks visible detail. Please provide a sharp photo.": "ಚಿತ್ರವು ತುಂಬಾ ಮಸುಕಾಗಿ ಕಾಣುತ್ತದೆ ಅಥವಾ ವಿವರಗಳ ಕೊರತೆಯಿದೆ. ದಯವಿಟ್ಟು ಸ್ಪಷ್ಟವಾದ ಫೋಟೋವನ್ನು ನೀಡಿ.",
@@ -465,23 +465,9 @@ UI_TRANSLATIONS = {
 
 # Sidebar Language Selector
 st.sidebar.markdown("### 🌐 Language / भाषा / भाषा / ಭಾಷೆ")
-
-# Always the full, fixed set of supported languages (English, Hindi, Marathi,
-# Kannada). Rebuilt fresh every run from LANGUAGES so no language — English
-# included — can ever be dropped from the list across repeated switches.
-_language_options = list(LANGUAGES.keys())
-
-# Guard against a stale/invalid value ever being left in session_state (e.g.
-# from a previous version of this app) so the widget always has a valid,
-# explicit index to select — this is what keeps switching back and forth
-# (English -> Kannada -> English -> Marathi -> English -> ...) reliable.
-if st.session_state.get("global_language_selector") not in _language_options:
-    st.session_state["global_language_selector"] = _language_options[0]
-
 selected_language = st.sidebar.selectbox(
     "Select language",
-    _language_options,
-    index=_language_options.index(st.session_state["global_language_selector"]),
+    list(LANGUAGES.keys()),
     key="global_language_selector",
     label_visibility="collapsed"
 )
@@ -502,59 +488,23 @@ def translate(text):
     return out
 
 # Override Streamlit components to automatically apply translation
-#
-# IMPORTANT: the `streamlit` module object is cached (imported once) and
-# persists across Streamlit script reruns within the same session — only
-# the script's own top-level code re-executes on every rerun, not the
-# `streamlit` package itself. Because of that, naively doing
-# `_original_selectbox = st.selectbox` on every rerun would, after the
-# first rerun, capture the *already-wrapped* function from the previous
-# run instead of the real native Streamlit function, causing translation
-# wrappers to stack endlessly (each rerun adding another translation
-# pass on top of the last). That stacking is what corrupted widget
-# return values/state and stopped the UI from cleanly reverting to
-# English. To prevent this, the true native functions are captured and
-# stashed on the `st` module exactly once per process; every rerun after
-# that reuses the same stashed originals.
-if not hasattr(st, "_trial_native_funcs"):
-    st._trial_native_funcs = {
-        "markdown": st.markdown,
-        "caption": st.caption,
-        "info": st.info,
-        "warning": st.warning,
-        "error": st.error,
-        "success": st.success,
-        "write": st.write,
-        "button": st.button,
-        "form_submit_button": st.form_submit_button,
-        "selectbox": st.selectbox,
-        "checkbox": st.checkbox,
-        "radio": st.radio,
-        "text_input": st.text_input,
-        "number_input": st.number_input,
-        "file_uploader": st.file_uploader,
-        "camera_input": st.camera_input,
-        "spinner": st.spinner,
-    }
-
-_native = st._trial_native_funcs
-_original_markdown = _native["markdown"]
-_original_caption = _native["caption"]
-_original_info = _native["info"]
-_original_warning = _native["warning"]
-_original_error = _native["error"]
-_original_success = _native["success"]
-_original_write = _native["write"]
-_original_button = _native["button"]
-_original_form_submit_button = _native["form_submit_button"]
-_original_selectbox = _native["selectbox"]
-_original_checkbox = _native["checkbox"]
-_original_radio = _native["radio"]
-_original_text_input = _native["text_input"]
-_original_number_input = _native["number_input"]
-_original_file_uploader = _native["file_uploader"]
-_original_camera_input = _native["camera_input"]
-_original_spinner = _native["spinner"]
+_original_markdown = st.markdown
+_original_caption = st.caption
+_original_info = st.info
+_original_warning = st.warning
+_original_error = st.error
+_original_success = st.success
+_original_write = st.write
+_original_button = st.button
+_original_form_submit_button = st.form_submit_button
+_original_selectbox = st.selectbox
+_original_checkbox = st.checkbox
+_original_radio = st.radio
+_original_text_input = st.text_input
+_original_number_input = st.number_input
+_original_file_uploader = st.file_uploader
+_original_camera_input = st.camera_input
+_original_spinner = st.spinner
 
 def _translated_markdown(body, *args, **kwargs):
     return _original_markdown(translate(body), *args, **kwargs)
@@ -585,25 +535,25 @@ def _translated_submit(label, *args, **kwargs):
     return _original_form_submit_button(translate(label), *args, **kwargs)
 
 def _translated_selectbox(label, options, *args, **kwargs):
-    display_options = [translate(x) if isinstance(x, str) else x for x in options]
-    idx = _original_selectbox(translate(label), display_options, *args, **kwargs)
-    try:
-        val_index = display_options.index(idx)
-        return options[val_index]
-    except Exception:
-        return idx
+    # Keep the underlying widget's real options/value as the original English
+    # strings (so Streamlit's internal widget state stays stable and correct
+    # across language switches), and only translate what's shown on screen
+    # via format_func. This guarantees the return value is always the
+    # original English option, and that switching languages back and forth
+    # never loses or corrupts the selection.
+    options_list = list(options)
+    kwargs.setdefault("format_func", lambda x: translate(x) if isinstance(x, str) else x)
+    return _original_selectbox(translate(label), options_list, *args, **kwargs)
 
 def _translated_checkbox(label, *args, **kwargs):
     return _original_checkbox(translate(label), *args, **kwargs)
 
 def _translated_radio(label, options, *args, **kwargs):
-    display_options = [translate(x) if isinstance(x, str) else x for x in options]
-    res = _original_radio(translate(label), display_options, *args, **kwargs)
-    try:
-        val_index = display_options.index(res)
-        return options[val_index]
-    except Exception:
-        return res
+    # Same approach as _translated_selectbox: real options stay English,
+    # only the on-screen labels are translated via format_func.
+    options_list = list(options)
+    kwargs.setdefault("format_func", lambda x: translate(x) if isinstance(x, str) else x)
+    return _original_radio(translate(label), options_list, *args, **kwargs)
 
 def _translated_text_input(label, *args, **kwargs):
     return _original_text_input(translate(label), *args, **kwargs)
@@ -998,252 +948,99 @@ except Exception as e:
     model, class_names = None, []
     MODEL_LOAD_ERROR = str(e)
 
-# ---------- Leaf Validation Gate (runs BEFORE the disease model) ----------
-# The disease-classification model above can be made to assign a disease
-# class to almost any image, so its own prediction/confidence must NEVER be
-# used as proof that an image is a crop leaf in the first place. This section
-# adds an independent "is this a supported crop leaf?" check.
-#
-# To plug in a dedicated ML-based leaf/non-leaf validator later, simply place
-# a trained binary classifier file at LEAF_VALIDATION_MODEL_PATH below (e.g.
-# "leaf_validation_model.keras", expected to output a single leaf-probability
-# value). It will be picked up automatically. If that file is not present,
-# the app does NOT crash — it gracefully falls back to a heuristic leaf check
-# (is_supported_leaf_image / _leaf_color_ratio below) instead.
-LEAF_VALIDATION_MODEL_PATH = "leaf_validation_model.keras"
-
-@st.cache_resource
-def load_leaf_validation_model():
-    try:
-        return load_model(LEAF_VALIDATION_MODEL_PATH)
-    except Exception:
-        # No dedicated leaf-validation model file found/loadable — this is
-        # expected unless LEAF_VALIDATION_MODEL_PATH has been provided.
-        # The app falls back to the heuristic check below.
-        return None
-
-leaf_validation_model = load_leaf_validation_model()
-
-
-def _leaf_color_ratio(img):
-    """
-    Heuristic fallback leaf detector (used only when no dedicated
-    leaf_validation_model is available). Estimates the fraction of the image
-    made up of plant-leaf-like tones (greens through yellow-green and
-    olive/brown, which also covers dried or diseased leaf tissue) using an
-    HSV color mask. This is deliberately independent of the disease
-    classification model and its output.
-    """
-    hsv_array = np.array(img.convert('HSV'))
-    hue_deg = hsv_array[:, :, 0].astype(np.float32) * (360.0 / 255.0)
-    sat = hsv_array[:, :, 1].astype(np.int32)
-    val = hsv_array[:, :, 2].astype(np.int32)
-
-    leafy_hue = (hue_deg >= 35) & (hue_deg <= 170)          # yellow-green -> green -> teal-green
-    has_saturation = sat > 25                                # excludes greys: sky, walls, screenshots, skin highlights
-    has_visibility = (val > 20) & (val < 250)                # excludes near-black shadows and blown-out white
-
-    leaf_mask = leafy_hue & has_saturation & has_visibility
-    return float(np.mean(leaf_mask))
-
-
-def is_supported_leaf_image(img):
-    """
-    Independent leaf / non-leaf gate. Must be called BEFORE the disease
-    model runs on an image. Returns (is_leaf: bool, error_message: str).
-
-    Uses leaf_validation_model when available; otherwise falls back to the
-    color-based heuristic. Never uses the disease-classification model's
-    output to decide whether the image is a leaf.
-    """
-    unsupported_msg = ("❌ This image does not appear to be a supported crop "
-                        "leaf image. Please upload or capture a clear photo "
-                        "of a supported crop leaf.")
-    try:
-        if leaf_validation_model is not None:
-            leaf_input = np.array(img.resize((224, 224)), dtype=np.float32) / 255.0
-            leaf_input = np.expand_dims(leaf_input, axis=0)
-            leaf_pred = leaf_validation_model.predict(leaf_input, verbose=0)
-            leaf_prob = float(np.ravel(leaf_pred)[0])
-            if leaf_prob < 0.5:
-                return False, unsupported_msg
-            return True, ""
-        else:
-            leaf_ratio = _leaf_color_ratio(img)
-            if leaf_ratio < 0.18:
-                return False, unsupported_msg
-            return True, ""
-    except Exception:
-        # Fail safe: never let a validation error let an unchecked image
-        # through to the disease model.
-        return False, unsupported_msg
-
 # Disease Info Database
-# "dose" holds the label-recommended concentration for the suggested product:
-#   amount = quantity of product per liter of spray water, unit = "g" or "ml".
-# Entries with dose=None have no chemical spray quantity (healthy, or remove/destroy only).
 disease_info = {
     "Pepper__bell___Bacterial_spot": {
         "name": "Bell Pepper Bacterial Spot",
         "severity": "Moderate",
         "action": "Spray copper-based bactericides early. Remove and destroy infected leaves to halt spread.",
         "precaution": "Avoid overhead irrigation as water splashes spread bacteria rapidly.",
-        "product": "Copper Oxychloride 50% WP",
-        "dose": {"amount": 3.0, "unit": "g"},
     },
     "Pepper__bell___healthy": {
         "name": "Healthy Bell Pepper Leaf",
         "severity": "Healthy",
         "action": "No treatment required. Maintain balanced watering and optimal soil fertility.",
         "precaution": "Regularly inspect undersides of leaves for early signs of pests.",
-        "product": None,
-        "dose": None,
     },
     "Potato___Early_blight": {
         "name": "Potato Early Blight",
         "severity": "Moderate",
         "action": "Apply fungicides like Mancozeb or Chlorothalonil every 7–10 days.",
         "precaution": "Practice crop rotation with non-solanaceous crops for at least 2–3 seasons.",
-        "product": "Mancozeb 75% WP",
-        "dose": {"amount": 2.5, "unit": "g"},
     },
     "Potato___Late_blight": {
         "name": "Potato Late Blight",
         "severity": "Severe",
         "action": "Apply systemic fungicides like Ridomil Gold or Cymoxanil immediately.",
         "precaution": "Destroy severely infected plants and maintain field sanitation.",
-        "product": "Ridomil Gold (Metalaxyl-M + Mancozeb)",
-        "dose": {"amount": 2.5, "unit": "g"},
     },
     "Potato___healthy": {
         "name": "Healthy Potato Leaf",
         "severity": "Healthy",
         "action": "Crop is healthy. Ensure adequate potassium and nitrogen nutrients.",
         "precaution": "Keep foliage dry; irrigate early in the day.",
-        "product": None,
-        "dose": None,
     },
     "Tomato___Bacterial_spot": {
         "name": "Tomato Bacterial Spot",
         "severity": "Moderate",
         "action": "Use copper hydroxide spray mixed with Mancozeb for better control.",
         "precaution": "Sanitize tools between handling affected plants.",
-        "product": "Copper Hydroxide 77% WP + Mancozeb",
-        "dose": {"amount": 2.0, "unit": "g"},
     },
     "Tomato___Early_blight": {
         "name": "Tomato Early Blight",
         "severity": "Moderate",
         "action": "Apply copper-based or chlorothalonil fungicides; prune lower infected foliage.",
         "precaution": "Mulch around soil base to prevent fungal spores from splashing up.",
-        "product": "Chlorothalonil 75% WP",
-        "dose": {"amount": 2.0, "unit": "g"},
     },
     "Tomato___Late_blight": {
         "name": "Tomato Late Blight",
         "severity": "Severe",
         "action": "Apply systemic fungicides (Mancozeb, Copper Oxychloride) without delay.",
         "precaution": "High humidity accelerates spread; increase plant spacing for airflow.",
-        "product": "Mancozeb 75% WP / Copper Oxychloride",
-        "dose": {"amount": 2.5, "unit": "g"},
     },
     "Tomato___Leaf_Mold": {
         "name": "Tomato Leaf Mold",
         "severity": "Moderate",
         "action": "Apply fungicides containing difenoconazole or copper soap.",
         "precaution": "Reduce greenhouse or crop humidity by improving air circulation.",
-        "product": "Difenoconazole 25% EC",
-        "dose": {"amount": 0.5, "unit": "ml"},
     },
     "Tomato___Septoria_leaf_spot": {
         "name": "Tomato Septoria Leaf Spot",
         "severity": "Moderate",
         "action": "Apply chlorothalonil or copper fungicide at the first sight of small spots.",
         "precaution": "Remove lower infected leaves to delay upward spread.",
-        "product": "Chlorothalonil 75% WP",
-        "dose": {"amount": 2.0, "unit": "g"},
     },
     "Tomato___Spider_mites Two-spotted_spider_mite": {
         "name": "Tomato Two-Spotted Spider Mite",
         "severity": "Moderate",
         "action": "Apply insecticidal soap, neem oil, or specific miticides (Abamectin).",
         "precaution": "Keep fields free of weeds which harbor mites during dry periods.",
-        "product": "Abamectin 1.8% EC",
-        "dose": {"amount": 0.5, "unit": "ml"},
     },
     "Tomato___Target_Spot": {
         "name": "Tomato Target Spot",
         "severity": "Moderate",
         "action": "Spray fungicides like azoxystrobin or chlorothalonil.",
         "precaution": "Avoid wet leaf surfaces for extended periods.",
-        "product": "Azoxystrobin 23% SC",
-        "dose": {"amount": 1.0, "unit": "ml"},
     },
     "Tomato___Tomato_Yellow_Leaf_Curl_Virus": {
         "name": "Tomato Yellow Leaf Curl Virus",
         "severity": "Severe",
         "action": "Control whitefly vectors using imidacloprid or neem oil sprays. Rogue infected plants.",
         "precaution": "Use yellow sticky traps and reflective mulches to deter whiteflies.",
-        "product": "Imidacloprid 17.8% SL",
-        "dose": {"amount": 0.3, "unit": "ml"},
     },
     "Tomato___Tomato_mosaic_virus": {
         "name": "Tomato Mosaic Virus",
         "severity": "Severe",
         "action": "No chemical cure. Remove and burn infected plants immediately.",
         "precaution": "Wash hands with soap before handling healthy plants; disinfect tools.",
-        "product": None,
-        "dose": None,
     },
     "Tomato___healthy": {
         "name": "Healthy Tomato Leaf",
         "severity": "Healthy",
         "action": "No treatment needed. Continue good agricultural practices.",
         "precaution": "Monitor weekly for early detection of pests.",
-        "product": None,
-        "dose": None,
     },
 }
-
-# Approx. spray solution volume needed per acre, scaled by how much of the
-# field appears affected (standard knapsack/power-sprayer coverage is ~200 L/acre
-# for full coverage; partial spread needs proportionally less).
-SPRAY_VOLUME_LITERS_PER_ACRE = {
-    "Only one/few leaves": 2,      # spot treatment, e.g. hand sprayer bottle
-    "Less than 25%": 50,
-    "25–50%": 100,
-    "50–75%": 150,
-    "More than 75%": 200,
-}
-
-
-def get_treatment_quantity(info, spread_label):
-    """
-    Given a disease_info entry and the farmer's selected 'field_spread' option,
-    return a human-readable string with the required product quantity, or None
-    if no chemical treatment applies.
-    """
-    dose = info.get("dose")
-    product = info.get("product")
-    if not dose or not product:
-        return None
-
-    volume_l = SPRAY_VOLUME_LITERS_PER_ACRE.get(spread_label, 100)
-    total_amount = dose["amount"] * volume_l
-    unit = dose["unit"]
-
-    if unit == "g" and total_amount >= 1000:
-        qty_str = f"{total_amount / 1000:.2f} kg"
-    elif unit == "ml" and total_amount >= 1000:
-        qty_str = f"{total_amount / 1000:.2f} L"
-    else:
-        qty_str = f"{total_amount:.1f} {unit}"
-
-    return (
-        f"{product}: mix {dose['amount']:g} {unit} per liter of water "
-        f"→ approx. {qty_str} of product in {volume_l} L of water per acre "
-        f"(adjust volume proportionally for your actual field size)."
-    )
 
 # Image validation and safety check functions
 def validate_prediction(img, raw_preds, class_names):
@@ -1269,7 +1066,7 @@ def validate_prediction(img, raw_preds, class_names):
     pred_class = class_names[idx]
 
     if conf < CONFIDENCE_THRESHOLD:
-        return False, "The model is not confident enough in this image prediction. Please ensure it is a clear leaf photo.", conf, pred_class
+        return False, "❌ Unsupported image. Please upload or capture a clear leaf image of Tomato, Potato, or Bell Pepper.", conf, pred_class
 
     return True, "", conf, pred_class
 
@@ -1352,59 +1149,90 @@ else:
     if file_list:
         uploaded_files = file_list
 
-with st.form(key="farmer_info_form"):
-    st.markdown('<div class="subsection-title">📋 ' + translate("Crop Information") + '</div>', unsafe_allow_html=True)
-    f1, f2 = st.columns(2)
-    with f1:
-        crop_name = st.selectbox(
-            "Crop name",
-            ["Tomato", "Potato", "Bell Pepper", "Other / Not sure"]
-        )
-        growth_stage = st.selectbox(
-            "Crop growth stage",
-            ["Seedling", "Vegetative", "Flowering", "Fruiting", "Mature"]
-        )
-        not_sure_age = st.checkbox("Not sure about crop age")
-        if not not_sure_age:
-            crop_age = st.number_input("Approximate crop age (days)", min_value=1, max_value=365, value=45)
-        else:
-            crop_age = None
-    with f2:
-        symptom_duration = st.selectbox(
-            "How long have you noticed the symptoms?",
-            ["Less than 1 day", "1–3 days", "4–7 days", "1–2 weeks", "More than 2 weeks"]
-        )
-        field_spread = st.selectbox(
-            "How much of the crop appears affected?",
-            ["Only one/few leaves", "Less than 25%", "25–50%", "50–75%", "More than 75%"]
-        )
-        recent_weather = st.selectbox(
-            "Recent weather / field condition",
-            ["Normal", "High rainfall", "High humidity", "Very hot", "Very dry"]
-        )
+# ---------- Immediate unsupported-image / quality gate ----------
+# Runs right after images are captured/uploaded and BEFORE the Crop
+# Information form, so a farmer never has to fill in crop details for a
+# photo that can't be analyzed. Existing quality checks and the model's
+# prediction/confidence logic (validate_prediction) are reused as-is.
+any_valid_image = False
+if uploaded_files:
+    for _pc_file in uploaded_files:
+        try:
+            _pc_file.seek(0)
+            _pc_bytes = _pc_file.read()
+            _pc_file.seek(0)
+            _pc_img = Image.open(io.BytesIO(_pc_bytes)).convert('RGB')
+            _pc_resized = _pc_img.resize((224, 224))
+            _pc_arr = np.array(_pc_resized, dtype=np.float32) / 255.0
+            _pc_arr = np.expand_dims(_pc_arr, axis=0)
+            _pc_preds = model.predict(_pc_arr, verbose=0)
+            _pc_is_valid, _pc_err_msg, _pc_conf, _pc_class = validate_prediction(_pc_img, _pc_preds, class_names)
+            if _pc_is_valid:
+                any_valid_image = True
+            else:
+                st.error(f"{translate(_pc_err_msg)}  ({_pc_file.name})")
+        except UnidentifiedImageError:
+            st.error(f"{translate('Invalid or Corrupted Image')}: {_pc_file.name}")
+        except Exception:
+            st.error(f"{translate('Failed to load image file.')}: {_pc_file.name}")
 
-    st.markdown('<div class="subsection-title">🧪 ' + translate("Have you already applied any treatment?") + '</div>', unsafe_allow_html=True)
-    applied_treatment = st.radio("Have you already applied any treatment?", ["No", "Yes"], horizontal=True, label_visibility="collapsed")
-    treatment_details = ""
-    if applied_treatment == "Yes":
-        treatment_details = st.text_input("Please specify the treatment used")
+show_crop_info_form = (not uploaded_files) or any_valid_image
+submit_button = False
 
-    st.markdown('<div class="subsection-title">📜 ' + translate("Has this crop shown this disease before? (optional)") + '</div>', unsafe_allow_html=True)
-    prior_history = st.selectbox("Has this crop shown this disease before? (optional)", ["No", "Yes", "Not sure"], label_visibility="collapsed")
-    history_count = 0
-    if prior_history == "Yes":
-        history_count = st.number_input("How many times has this crop shown this disease before?", min_value=1, max_value=10, value=1)
+if show_crop_info_form:
+    with st.form(key="farmer_info_form"):
+        st.markdown('<div class="subsection-title">📋 ' + translate("Crop Information") + '</div>', unsafe_allow_html=True)
+        f1, f2 = st.columns(2)
+        with f1:
+            crop_name = st.selectbox(
+                "Crop name",
+                ["Tomato", "Potato", "Bell Pepper", "Other / Not sure"]
+            )
+            growth_stage = st.selectbox(
+                "Crop growth stage",
+                ["Seedling", "Vegetative", "Flowering", "Fruiting", "Mature"]
+            )
+            not_sure_age = st.checkbox("Not sure about crop age")
+            if not not_sure_age:
+                crop_age = st.number_input("Approximate crop age (days)", min_value=1, max_value=365, value=45)
+            else:
+                crop_age = None
+        with f2:
+            symptom_duration = st.selectbox(
+                "How long have you noticed the symptoms?",
+                ["Less than 1 day", "1–3 days", "4–7 days", "1–2 weeks", "More than 2 weeks"]
+            )
+            field_spread = st.selectbox(
+                "How much of the crop appears affected?",
+                ["Only one/few leaves", "Less than 25%", "25–50%", "50–75%", "More than 75%"]
+            )
+            recent_weather = st.selectbox(
+                "Recent weather / field condition",
+                ["Normal", "High rainfall", "High humidity", "Very hot", "Very dry"]
+            )
 
-    st.markdown('<div class="subsection-title">🌱 ' + translate("Type of soil used for growing") + '</div>', unsafe_allow_html=True)
-    soil_type = st.selectbox("Type of soil used for growing", ["Loamy soil", "Clayey soil", "Sandy soil", "Black soil (Regur)", "Red soil", "Alluvial soil"], label_visibility="collapsed")
+        st.markdown('<div class="subsection-title">🧪 ' + translate("Have you already applied any treatment?") + '</div>', unsafe_allow_html=True)
+        applied_treatment = st.radio("Have you already applied any treatment?", ["No", "Yes"], horizontal=True, label_visibility="collapsed")
+        treatment_details = ""
+        if applied_treatment == "Yes":
+            treatment_details = st.text_input("Please specify the treatment used")
 
-    c_loc1, c_loc2 = st.columns(2)
-    with c_loc1:
-        village = st.text_input("Village / City (optional)")
-    with c_loc2:
-        district = st.text_input("District (optional)")
+        st.markdown('<div class="subsection-title">📜 ' + translate("Has this crop shown this disease before? (optional)") + '</div>', unsafe_allow_html=True)
+        prior_history = st.selectbox("Has this crop shown this disease before? (optional)", ["No", "Yes", "Not sure"], label_visibility="collapsed")
+        history_count = 0
+        if prior_history == "Yes":
+            history_count = st.number_input("How many times has this crop shown this disease before?", min_value=1, max_value=10, value=1)
 
-    submit_button = st.form_submit_button(label="🔍 " + translate("Analyze All Photos"))
+        st.markdown('<div class="subsection-title">🌱 ' + translate("Type of soil used for growing") + '</div>', unsafe_allow_html=True)
+        soil_type = st.selectbox("Type of soil used for growing", ["Loamy soil", "Clayey soil", "Sandy soil", "Black soil (Regur)", "Red soil", "Alluvial soil"], label_visibility="collapsed")
+
+        c_loc1, c_loc2 = st.columns(2)
+        with c_loc1:
+            village = st.text_input("Village / City (optional)")
+        with c_loc2:
+            district = st.text_input("District (optional)")
+
+        submit_button = st.form_submit_button(label="🔍 " + translate("Analyze All Photos"))
 
 if submit_button:
     if not uploaded_files:
@@ -1430,20 +1258,6 @@ if submit_button:
             else:
                 image_results = []
                 for name, img in valid_images:
-                    # ---- Leaf validation gate: runs BEFORE the disease model ----
-                    # Each image is validated independently, so an invalid
-                    # (non-leaf) image never affects other images' results,
-                    # and the disease model is never invoked for it.
-                    is_leaf, leaf_err_msg = is_supported_leaf_image(img)
-                    if not is_leaf:
-                        image_results.append({
-                            "name": name,
-                            "img": img,
-                            "is_valid": False,
-                            "error": leaf_err_msg
-                        })
-                        continue
-
                     img_resized = img.resize((224, 224))
                     img_array = np.array(img_resized, dtype=np.float32) / 255.0
                     img_array = np.expand_dims(img_array, axis=0)
@@ -1463,9 +1277,7 @@ if submit_button:
                             "name": raw_class_name.replace("_", " "),
                             "severity": "Moderate",
                             "action": "Consult agricultural expert.",
-                            "precaution": "Monitor closely.",
-                            "product": None,
-                            "dose": None,
+                            "precaution": "Monitor closely."
                         })
                         image_results.append({
                             "name": name,
@@ -1476,8 +1288,7 @@ if submit_button:
                             "confidence": conf,
                             "severity": info["severity"],
                             "action": info["action"],
-                            "precaution": info["precaution"],
-                            "quantity": get_treatment_quantity(info, field_spread)
+                            "precaution": info["precaution"]
                         })
 
                 # Separate valid leaf predictions from rejected images
@@ -1602,14 +1413,6 @@ if submit_button:
                         </div>
                     """, unsafe_allow_html=True)
 
-                    if primary_info.get("quantity"):
-                        st.markdown(f"""
-                            <div class="treatment-box" style="margin-top:8px;">
-                                <h3 style="margin-top:0; color:#f6f9f2;">🧪 {translate("Required Quantity")}</h3>
-                                <p style="font-size:0.98rem; color:#eef2e6;">{translate(primary_info["quantity"])}</p>
-                            </div>
-                        """, unsafe_allow_html=True)
-
                     if primary_info.get("precaution"):
                         st.warning(f"⚠️ **{translate('Important Precaution')}:** {translate(primary_info['precaution'])}")
 
@@ -1637,8 +1440,7 @@ if submit_button:
                     """, unsafe_allow_html=True)
 
                     # Overall Summary Audio synthesis
-                    quantity_speech = f" {translate('Required Quantity')}: {translate(primary_info['quantity'])}." if primary_info.get("quantity") else ""
-                    full_summary_text = f"{translate('Overall Crop Health Assessment')}: {translated_overall_title}. {translate('Recommended Action')}: {translate(primary_info.get('action', ''))}.{quantity_speech} {translate(urgency_text)}. {translate(urgency_desc)}"
+                    full_summary_text = f"{translate('Overall Crop Health Assessment')}: {translated_overall_title}. {translate('Recommended Action')}: {translate(primary_info.get('action', ''))}. {translate(urgency_text)}. {translate(urgency_desc)}"
                     st.markdown('<div class="section-header">🔊 ' + translate("Voice Summary") + '</div>', unsafe_allow_html=True)
                     full_audio_bytes = get_voice_audio_bytes(full_summary_text, CURRENT_LANG)
                     if full_audio_bytes:
