@@ -1,202 +1,258 @@
 import streamlit as st
+from tensorflow.keras.models import load_model
+from PIL import Image, ImageStat
 import numpy as np
+import json
 import io
-from PIL import Image
-from gTTS import gTTS
+from collections import Counter
+from gtts import gTTS
 
-# -----------------------------------------------------------------------------
-# 1. PAGE SETUP & SESSION STATE FOR LANGUAGE RE-CHANGING
-# -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="KrishiRakshak AI",
+    page_title="KrishiRakshak AI - Multi-Language Crop Advisory",
     page_icon="🌾",
     layout="wide"
 )
 
-# Language Map (gTTS codes: hi=Hindi, kn=Kannada, mr=Marathi, en=English)
+# -----------------------------------------------------------------------------
+# 1. LANGUAGE & DICTIONARY CONFIGURATION
+# -----------------------------------------------------------------------------
 LANGUAGES = {
     "English": "en",
     "हिंदी (Hindi)": "hi",
+    "मराठी (Marathi)": "mr",
     "ಕನ್ನಡ (Kannada)": "kn",
-    "मराठी (Marathi)": "mr"
 }
 
-# Callback function to force full re-run when language changes
-def on_language_change():
-    st.session_state["selected_lang_code"] = LANGUAGES[st.session_state["lang_selector"]]
-
-if "selected_lang_code" not in st.session_state:
-    st.session_state["selected_lang_code"] = "en"
-
-# Sidebar Selector with Callback
-selected_lang_label = st.sidebar.selectbox(
-    "🌐 Select Language / भाषा चुनें",
+# Sidebar Language Selector
+st.sidebar.markdown("### 🌐 Select Language / भाषा चुनें")
+selected_language = st.sidebar.selectbox(
+    "Select language",
     list(LANGUAGES.keys()),
-    key="lang_selector",
-    on_change=on_language_change
+    key="global_language_selector",
+    label_visibility="collapsed"
 )
+CURRENT_LANG = LANGUAGES[selected_language]
 
-CURRENT_LANG = st.session_state["selected_lang_code"]
-
-# -----------------------------------------------------------------------------
-# 2. COMPLETE TRANSLATION DICTIONARY MATRIX
-# -----------------------------------------------------------------------------
-TRANSLATIONS = {
-    "en": {
-        "title": "KrishiRakshak AI",
-        "subtitle": "Early Detection & Management of Crop Diseases and Pest Infestations",
-        "how_it_works": "How it works",
-        "step1": "📷 Snap photos",
-        "step2": "🧠 AI analyzes",
-        "step3": "🗣️ Get advice",
-        "upload_label": "📁 Upload Leaf Photo",
-        "uploaded_img": "Uploaded Image",
-        "assessment": "Overall Crop Health Assessment",
-        "detection_res": "Detection result",
-        "severity_label": "Severity",
-        "confidence_label": "Confidence",
-        "risk_label": "Overall risk",
-        "rec_action": "Recommended Action",
-        "precautions": "Important Precaution",
-        "voice_summary": "Voice Summary",
-        "disease_name": "Tomato Early Blight",
-        "severity_val": "Moderate",
-        "risk_val": "Moderate Risk",
-        "action_val": "Apply copper-based fungicides or Mancozeb every 7 to 10 days.",
-        "precaution_val": "Avoid overhead irrigation as water splashes spread bacteria rapidly.",
-    },
+# Translation Dictionary Matrix
+UI_TRANSLATIONS = {
+    "en": {},
     "hi": {
-        "title": "कृषि रक्षक AI",
-        "subtitle": "फसल रोगों और कीट प्रकोप की शीघ्र पहचान और प्रबंधन",
-        "how_it_works": "यह कैसे काम करता है",
-        "step1": "📷 फोटो लें",
-        "step2": "🧠 AI विश्लेषण करता है",
-        "step3": "🗣️ सलाह प्राप्त करें",
-        "upload_label": "📁 पत्ती की फोटो अपलोड करें",
-        "uploaded_img": "अपलोड की गई छवि",
-        "assessment": "फसल स्वास्थ्य का समग्र मूल्यांकन",
-        "detection_res": "पहचान का परिणाम",
-        "severity_label": "गंभीरता",
-        "confidence_label": "विश्वास स्तर",
-        "risk_label": "कुल जोखिम",
-        "rec_action": "अनुशंसित कार्रवाई",
-        "precautions": "महत्वपूर्ण सावधानी",
-        "voice_summary": "आवाज़ में सारांश",
-        "disease_name": "टमाटर का अगेती झुलसा रोग (अर्ली ब्लाइट)",
-        "severity_val": "मध्यम",
-        "risk_val": "मध्यम जोखिम",
-        "action_val": "हर 7 से 10 दिनों में तांबे आधारित कवकनाशी या मैंकोज़ेब का छिड़काव करें।",
-        "precaution_val": "ऊपर से सिंचाई करने से बचें क्योंकि पानी के छिटकने से बीमारी तेज़ी से फैलती है।",
-    },
-    "kn": {
-        "title": "ಕೃಷಿ ರಕ್ಷಕ್ AI",
-        "subtitle": "ಬೆಳೆ ರೋಗಗಳು ಮತ್ತು ಕೀಟ ಬಾಧೆಗಳ ಆರಂಭಿಕ ಪತ್ತೆ ಮತ್ತು ನಿರ್ವಹಣೆ",
-        "how_it_works": "ಇದು ಹೇಗೆ ಕೆಲಸ ಮಾಡುತ್ತದೆ",
-        "step1": "📷 ಫೋಟೋ ತೆಗೆದುಕೊಳ್ಳಿ",
-        "step2": "🧠 AI ವಿಶ್ಲೇಷಿಸುತ್ತದೆ",
-        "step3": "🗣️ ಸಲಹೆ ಪಡೆಯಿರಿ",
-        "upload_label": "📁 ಎಲೆಯ ಫೋಟೋ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ",
-        "uploaded_img": "ಅಪ್‌ಲೋಡ್ ಮಾಡಿದ ಚಿತ್ರ",
-        "assessment": "ಒಟ್ಟಾರೆ ಬೆಳೆ ಆರೋಗ್ಯ ಮೌಲ್ಯಮಾಪನ",
-        "detection_res": "ಪತ್ತೆ ಫಲಿತಾಂಶ",
-        "severity_label": "ತೀವ್ರತೆ",
-        "confidence_label": "ವಿಶ್ವಾಸ ಮಟ್ಟ",
-        "risk_label": "ಒಟ್ಟಾರೆ ಅಪಾಯ",
-        "rec_action": "ಶಿಫಾರಸು ಮಾಡಿದ ಕ್ರಮ",
-        "precautions": "ಪ್ರಮುಖ ಮುನ್ನೆಚ್ಚರಿಕೆ",
-        "voice_summary": "ಧ್ವನಿ ಸಾರಾಂಶ",
-        "disease_name": "ಟೊಮೆಟೊ ಅರ್ಲಿ ಬ್ಲೈಟ್ ರೋಗ",
-        "severity_val": "ಮಧ್ಯಮ",
-        "risk_val": "ಮಧ್ಯಮ ಅಪಾಯ",
-        "action_val": "ಪ್ರತಿ 7 ರಿಂದ 10 ದಿನಗಳಿಗೊಮ್ಮೆ ತಾಮ್ರ ಆಧಾರಿತ ಶಿಲೀಂಧ್ರನಾಶಕ ಅಥವಾ ಮ್ಯಾಂಕೋಜೆಬ್ ಸಿಂಪಡಿಸಿ.",
-        "precaution_val": "ಮೇಲಿಂದ ನೀರುಣಿಸುವುದನ್ನು ತಪ್ಪಿಸಿ ಏಕೆಂದರೆ ನೀರಿನ ಹನಿಗಳು ರೋಗವನ್ನು ವೇಗವಾಗಿ ಹರಡುತ್ತವೆ.",
+        # App UI Header & Sections
+        "KrishiRakshak AI": "कृषि रक्षक AI",
+        "Early Detection & Management of Crop Diseases and Pest Infestations": "फसल रोगों और कीट प्रकोप की शीघ्र पहचान और प्रबंधन",
+        "How it works": "यह कैसे काम करता है",
+        "Snap photos": "📷 फोटो लें",
+        "AI analyzes": "🧠 AI विश्लेषण करता है",
+        "Get advice": "🗣️ सलाह प्राप्त करें",
+        "Input Method": "इनपुट का तरीका",
+        "📷 Click Leaf Photo": "📷 पत्ती की फोटो लें",
+        "📁 Upload Leaf Photo": "📁 पत्ती की फोटो अपलोड करें",
+        "Scan crop leaves": "फसल की पत्तियों को स्कैन करें",
+        "Crop Information": "फसल की जानकारी",
+        "Crop name": "फसल का नाम",
+        "Crop growth stage": "फसल की वृद्धि अवस्था",
+        "Recent weather / field condition": "हाल की मौसम स्थिति",
+        "Analyze All Photos": "सभी तस्वीरों का विश्लेषण करें",
+        
+        # Results & Metrics
+        "Individual Photo Results": "व्यक्तिगत फोटो परिणाम",
+        "Overall Crop Health Assessment": "फसल स्वास्थ्य का समग्र मूल्यांकन",
+        "Detection result": "पहचान का परिणाम",
+        "Recommended Action": "अनुशंसित कार्रवाई",
+        "Important Precaution": "महत्वपूर्ण सावधानी",
+        "Confidence": "विश्वास स्तर",
+        "Severity": "गंभीरता",
+        "Voice Summary": "आवाज़ में सारांश",
+        "Overall risk": "कुल जोखिम",
+        "Low Risk": "कम जोखिम",
+        "Moderate Risk": "मध्यम जोखिम",
+        "High Risk": "उच्च जोखिम",
+        "Healthy": "स्वस्थ",
+        "Moderate": "मध्यम",
+        "Severe": "गंभीर",
+        
+        # Disease Names & Treatments
+        "Tomato Early Blight": "टमाटर का अगेती झुलसा (अर्ली ब्लाइट)",
+        "Potato Late Blight": "आलू का पछेती झुलसा (लेट ब्लाइट)",
+        "Tomato Bacterial Spot": "टमाटर का बैक्टीरियल धब्बा रोग",
+        "Healthy Leaf": "स्वस्थ पत्ती",
+        "Apply copper-based fungicides or Mancozeb every 7-10 days.": "हर 7-10 दिनों में तांबे आधारित कवकनाशी या मैंकोज़ेब का छिड़काव करें।",
+        "Apply systemic fungicides like Ridomil Gold immediately.": "तुरंत रिडोमिल गोल्ड जैसे प्रणालीगत कवकनाशी का प्रयोग करें।",
+        "Avoid overhead irrigation as water splashes spread bacteria rapidly.": "ऊपर से सिंचाई करने से बचें क्योंकि पानी के छिटकने से जीवाणु तेज़ी से फैलते हैं।"
     },
     "mr": {
-        "title": "कृषी रक्षक AI",
-        "subtitle": "पिकांचे रोग आणि किडींचा लवकर शोध व व्यवस्थापन",
-        "how_it_works": "हे कसे कार्य करते",
-        "step1": "📷 फोटो काढा",
-        "step2": "🧠 AI विश्लेषण करते",
-        "step3": "🗣️ सल्ला मिळवा",
-        "upload_label": "📁 पानाचा फोटो अपलोड करा",
-        "uploaded_img": "अपलोड केलेले चित्र",
-        "assessment": "पिकाच्या आरोग्याचे एकूण मूल्यांकन",
-        "detection_res": "शोध परिणाम",
-        "severity_label": "तीव्रता",
-        "confidence_label": "विश्वासार्हता",
-        "risk_label": "एकूण धोका",
-        "rec_action": "शिफारस केलेली कृती",
-        "precautions": "महत्त्वाची खबरदारी",
-        "voice_summary": "आवाजातील सारांश",
-        "disease_name": "टोमॅटोवरील अर्ली ब्लाइट रोग",
-        "severity_val": "मध्यम",
-        "risk_val": "मध्यम धोका",
-        "action_val": "दर ७ ते १० दिवसांनी तांब्यावर आधारित बुरशीनाशक किंवा मँकोझेब फवारा.",
-        "precaution_val": "वरून पाणी देणे टाळा कारण पाण्याचे थेंब रोग वेगाने पसरवतात.",
+        "KrishiRakshak AI": "कृषी रक्षक AI",
+        "Early Detection & Management of Crop Diseases and Pest Infestations": "पिकांचे रोग आणि किडींचा लवकर शोध व व्यवस्थापन",
+        "How it works": "हे कसे कार्य करते",
+        "Snap photos": "📷 फोटो काढा",
+        "AI analyzes": "🧠 AI विश्लेषण करते",
+        "Get advice": "🗣️ सल्ला मिळवा",
+        "Input Method": "इनपुट पद्धत",
+        "📷 Click Leaf Photo": "📷 पानाचा फोटो काढा",
+        "📁 Upload Leaf Photo": "📁 पानाचा फोटो अपलोड करा",
+        "Scan crop leaves": "पिकाची पाने स्कॅन करा",
+        "Crop Information": "पिकाची माहिती",
+        "Crop name": "पिकाचे नाव",
+        "Crop growth stage": "पिकाच्या वाढीची अवस्था",
+        "Recent weather / field condition": "हवामान / शेताची स्थिती",
+        "Analyze All Photos": "सर्व फोटोंचे विश्लेषण करा",
+        "Individual Photo Results": "वैयक्तिक फोटो परिणाम",
+        "Overall Crop Health Assessment": "पिकाच्या आरोग्याचे एकूण मूल्यांकन",
+        "Detection result": "शोध परिणाम",
+        "Recommended Action": "शिफारस केलेली कृती",
+        "Important Precaution": "महत्त्वाची खबरदारी",
+        "Confidence": "विश्वास",
+        "Severity": "तीव्रता",
+        "Voice Summary": "आवाजातील सारांश",
+        "Overall risk": "एकूण धोका",
+        "Low Risk": "कमी धोका",
+        "Moderate Risk": "मध्यम धोका",
+        "High Risk": "जास्त धोका",
+        "Healthy": "निरोगी",
+        "Moderate": "मध्यम",
+        "Severe": "गंभीर",
+        "Tomato Early Blight": "टोमॅटोवरील अर्ली ब्लाइट रोग",
+        "Potato Late Blight": "बटाट्यावरील लेट ब्लाइट रोग",
+        "Tomato Bacterial Spot": "टोमॅटोवरील बॅक्टेरियल स्पॉट",
+        "Healthy Leaf": "निरोगी पान",
+        "Apply copper-based fungicides or Mancozeb every 7-10 days.": "दर ७-१० दिवसांनी तांब्यावर आधारित बुरशीनाशक किंवा मँकोझेब फवारा.",
+        "Apply systemic fungicides like Ridomil Gold immediately.": "रिडोमिल गोल्डसारख्या बुरशीनाशकाचा त्वरित वापर करा.",
+        "Avoid overhead irrigation as water splashes spread bacteria rapidly.": "वरून पाणी देणे टाळा कारण पाण्याचे थेंब बॅक्टेरिया वेगाने पसरवतात."
+    },
+    "kn": {
+        "KrishiRakshak AI": "ಕೃಷಿ ರಕ್ಷಕ್ AI",
+        "Early Detection & Management of Crop Diseases and Pest Infestations": "ಬೆಳೆ ರೋಗಗಳು ಮತ್ತು ಕೀಟ ಬಾಧೆಗಳ ಆರಂಭಿಕ ಪತ್ತೆ ಮತ್ತು ನಿರ್ವಹಣೆ",
+        "How it works": "ಇದು ಹೇಗೆ ಕೆಲಸ ಮಾಡುತ್ತದೆ",
+        "Snap photos": "📷 ಫೋಟೋ ತೆಗೆದುಕೊಳ್ಳಿ",
+        "AI analyzes": "🧠 AI ವಿಶ್ಲೇಷಿಸುತ್ತದೆ",
+        "Get advice": "🗣️ ಸಲಹೆ ಪಡೆಯಿರಿ",
+        "Input Method": "ಇನ್‌ಪುಟ್ ವಿಧಾನ",
+        "📷 Click Leaf Photo": "📷 ಎಲೆಯ ಫೋಟೋ ತೆಗೆದುಕೊಳ್ಳಿ",
+        "📁 Upload Leaf Photo": "📁 ಎಲೆಯ ಫೋಟೋ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ",
+        "Scan crop leaves": "ಬೆಳೆ ಎಲೆಗಳನ್ನು ಸ್ಕ್ಯಾನ್ ಮಾಡಿ",
+        "Crop Information": "ಬೆಳೆ ಮಾಹಿತಿ",
+        "Crop name": "ಬೆಳೆಯ ಹೆಸರು",
+        "Crop growth stage": "ಬೆಳೆಯ ಬೆಳವಣಿಗೆಯ ಹಂತ",
+        "Recent weather / field condition": "ಇತ್ತೀಚಿನ ಹವಾಮಾನ ಪರಿಸ್ಥಿತಿ",
+        "Analyze All Photos": "ಎಲ್ಲಾ ಫೋಟೋಗಳನ್ನು ವಿಶ್ಲೇಷಿಸಿ",
+        "Individual Photo Results": "ವೈಯಕ್ತಿಕ ಫೋಟೋ ಫಲಿತಾಂಶಗಳು",
+        "Overall Crop Health Assessment": "ಒಟ್ಟಾರೆ ಬೆಳೆ ಆರೋಗ್ಯ ಮೌಲ್ಯಮಾಪನ",
+        "Detection result": "ಪತ್ತೆ ಫಲಿತಾಂಶ",
+        "Recommended Action": "ಶಿಫಾರಸು ಮಾಡಿದ ಕ್ರಮ",
+        "Important Precaution": "ಪ್ರಮುಖ ಮುನ್ನೆಚ್ಚರಿಕೆ",
+        "Confidence": "ವಿಶ್ವಾಸ",
+        "Severity": "ತೀವ್ರತೆ",
+        "Voice Summary": "ಧ್ವನಿ ಸಾರಾಂಶ",
+        "Overall risk": "ಒಟ್ಟಾರೆ ಅಪಾಯ",
+        "Low Risk": "ಕಡಿಮೆ ಅಪಾಯ",
+        "Moderate Risk": "ಮಧ್ಯಮ ಅಪಾಯ",
+        "High Risk": "ಹೆಚ್ಚಿನ ಅಪಾಯ",
+        "Healthy": "ಆರೋಗ್ಯಕರ",
+        "Moderate": "ಮಧ್ಯಮ",
+        "Severe": "ತೀವ್ರ",
+        "Tomato Early Blight": "ಟೊಮೆಟೊ ಅರ್ಲಿ ಬ್ಲೈಟ್ ರೋಗ",
+        "Potato Late Blight": "ಆಲೂಗಡ್ಡೆ ಲೇಟ್ ಬ್ಲೈಟ್ ರೋಗ",
+        "Tomato Bacterial Spot": "ಟೊಮೆಟೊ ಬ್ಯಾಕ್ಟೀರಿಯಲ್ ಸ್ಪಾಟ್",
+        "Healthy Leaf": "ಆರೋಗ್ಯಕರ ಎಲೆ",
+        "Apply copper-based fungicides or Mancozeb every 7-10 days.": "ಪ್ರತಿ 7-10 ದಿನಗಳಿಗೊಮ್ಮೆ ತಾಮ್ರ ಆಧಾರಿತ ಶಿಲೀಂಧ್ರನಾಶಕ ಅಥವಾ ಮ್ಯಾಂಕೋಜೆಬ್ ಸಿಂಪಡಿಸಿ.",
+        "Apply systemic fungicides like Ridomil Gold immediately.": "ತಕ್ಷಣವೇ ರಿಡೋಮಿಲ್ ಗೋಲ್ಡ್ ನಂತಹ ಸಿಸ್ಟಮಿಕ್ ಫಂಗಿಸೈಡ್ ಬಳಸಿ.",
+        "Avoid overhead irrigation as water splashes spread bacteria rapidly.": "ಮೇಲಿಂದ ನೀರುಣಿಸುವುದನ್ನು ತಪ್ಪಿಸಿ ಏಕೆಂದರೆ ನೀರಿನ ಹನಿಗಳು ಬ್ಯಾಕ್ಟೀರಿಯಾವನ್ನು ವೇಗವಾಗಿ ಹರಡುತ್ತವೆ."
     }
 }
 
-# Lookup helper
-def t(key):
-    return TRANSLATIONS[CURRENT_LANG].get(key, TRANSLATIONS["en"].get(key, key))
+# Centralized Translator Helper
+def translate(text):
+    """Looks up and translates UI strings into the currently selected language."""
+    if not isinstance(text, str) or CURRENT_LANG == "en" or not text.strip():
+        return text
+    table = UI_TRANSLATIONS.get(CURRENT_LANG, {})
+    return table.get(text, text)
 
-# Guaranteed Audio Generator in Selected Language
-@st.cache_data(show_spinner=False)
-def generate_native_audio(text_to_speak, lang_code):
+# Text-To-Speech Converter
+def generate_audio(text_content):
+    """Generates an MP3 audio file in the selected language."""
     try:
-        tts = gTTS(text=text_to_speak, lang=lang_code, slow=False)
+        tts = gTTS(text=text_content, lang=CURRENT_LANG, slow=False)
         fp = io.BytesIO()
         tts.write_to_fp(fp)
         fp.seek(0)
         return fp.read()
-    except Exception as e:
-        st.error(f"Audio generation error: {e}")
+    except Exception:
         return None
 
 # -----------------------------------------------------------------------------
-# 3. INTERFACE DISPLAY (DYNAMIC RE-RENDERING)
+# 2. SAMPLE DISEASE DATABASE (IN ENGLISH BASE KEYS)
 # -----------------------------------------------------------------------------
-st.title(f"🌾 {t('title')}")
-st.caption(t('subtitle'))
+disease_db = {
+    "Tomato_Early_blight": {
+        "name": "Tomato Early Blight",
+        "severity": "Moderate",
+        "action": "Apply copper-based fungicides or Mancozeb every 7-10 days.",
+        "precaution": "Avoid overhead irrigation as water splashes spread bacteria rapidly."
+    },
+    "Potato_Late_blight": {
+        "name": "Potato Late Blight",
+        "severity": "Severe",
+        "action": "Apply systemic fungicides like Ridomil Gold immediately.",
+        "precaution": "Destroy severely infected plants and maintain field sanitation."
+    },
+    "Healthy": {
+        "name": "Healthy Leaf",
+        "severity": "Healthy",
+        "action": "No treatment needed. Continue standard agricultural care.",
+        "precaution": "Inspect regularly for early signs of pests."
+    }
+}
 
-st.subheader("⚡ " + t('how_it_works'))
-c1, c2, c3 = st.columns(3)
-c1.info(f"1. **{t('step1')}**")
-c2.info(f"2. **{t('step2')}**")
-c3.info(f"3. **{t('step3')}**")
+# -----------------------------------------------------------------------------
+# 3. INTERFACE RENDER
+# -----------------------------------------------------------------------------
+st.title(f"🌾 {translate('KrishiRakshak AI')}")
+st.caption(translate("Early Detection & Management of Crop Diseases and Pest Infestations"))
 
-st.markdown("---")
+st.subheader("⚡ " + translate("How it works"))
+col1, col2, col3 = st.columns(3)
+col1.info(f"1. **{translate('Snap photos')}**")
+col2.info(f"2. **{translate('AI analyzes')}**")
+col3.info(f"3. **{translate('Get advice')}**")
 
-# Image Upload
-uploaded_file = st.file_uploader(t('upload_label'), type=["jpg", "jpeg", "png"])
+# Input Section
+st.subheader("📸 " + translate("Scan crop leaves"))
+upload_file = st.file_uploader(translate("📁 Upload Leaf Photo"), type=["jpg", "jpeg", "png"])
 
-if uploaded_file is not None:
-    image = Image.open(uploaded_file)
-    st.image(image, caption=t('uploaded_img'), width=300)
+if upload_file is not None:
+    img = Image.open(upload_file)
+    st.image(img, caption=translate("Uploaded Image"), width=300)
     
-    # Translated Assessment Display
-    st.subheader("📊 " + t('assessment'))
-    
-    col_a, col_b = st.columns(2)
-    with col_a:
-        st.markdown(f"**{t('detection_res')}:** {t('disease_name')}")
-        st.markdown(f"**{t('severity_label')}:** {t('severity_val')}")
-    with col_b:
-        st.markdown(f"**{t('confidence_label')}:** 96.5%")
-        st.markdown(f"**{t('risk_label')}:** {t('risk_val')}")
+    # Mock Detection (Replace with your Tensorflow model inference)
+    detected_key = "Tomato_Early_blight" 
+    disease = disease_db[detected_key]
 
-    st.success(f"🎯 **{t('rec_action')}:** {t('action_val')}")
-    st.warning(f"⚠️ **{t('precautions')}:** {t('precaution_val')}")
+    # Translate Outputs Dynamically
+    translated_name = translate(disease["name"])
+    translated_severity = translate(disease["severity"])
+    translated_action = translate(disease["action"])
+    translated_precaution = translate(disease["precaution"])
 
-    # Voice Summary Generation (Native Language Text Sent to gTTS)
-    st.subheader("🔊 " + t('voice_summary'))
+    # Render Translated Diagnosis
+    st.markdown("---")
+    st.subheader("📊 " + translate("Overall Crop Health Assessment"))
     
-    # Construct sentence directly in target native language
-    audio_text = f"{t('disease_name')}. {t('rec_action')}: {t('action_val')}. {t('precautions')}: {t('precaution_val')}"
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown(f"**{translate('Detection result')}:** {translated_name}")
+        st.markdown(f"**{translate('Severity')}:** {translated_severity}")
+    with c2:
+        st.markdown(f"**{translate('Confidence')}:** 96.5%")
+        st.markdown(f"**{translate('Overall risk')}:** {translate('Moderate Risk')}")
+
+    st.success(f"🎯 **{translate('Recommended Action')}:** {translated_action}")
+    st.warning(f"⚠️ **{translate('Important Precaution')}:** {translated_precaution}")
+
+    # Generate Dynamic Voice Advice
+    st.subheader("🔊 " + translate("Voice Summary"))
+    full_audio_text = f"{translated_name}. {translate('Severity')}: {translated_severity}. {translated_action}"
+    audio_data = generate_audio(full_audio_text)
     
-    # Generate audio passing target language code
-    audio_bytes = generate_native_audio(audio_text, CURRENT_LANG)
-    
-    if audio_bytes:
-        # Pass key containing CURRENT_LANG so widget resets on language swap
-        st.audio(audio_bytes, format="audio/mp3", autoplay=False)
+    if audio_data:
+        st.audio(audio_data, format="audio/mp3")
