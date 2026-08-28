@@ -306,10 +306,34 @@ st.markdown("""
     div[data-testid="stNumberInput"] label, div[data-testid="stCheckbox"] label {
         color: #eef2e6 !important;
     }
+
+    /* ===== FIX: make the number-input box (incl. +/- buttons area) fully visible
+       against the dark theme. Previously only the <input> text color/background
+       was themed, leaving the surrounding widget shell/buttons on the default
+       light Streamlit styling, which made the temperature/humidity boxes look
+       blank or "invisible" against the dark background. ===== */
+    div[data-testid="stNumberInput"] {
+        background: transparent !important;
+    }
+    div[data-testid="stNumberInput"] > div {
+        background: rgba(255,255,255,0.08) !important;
+        border: 1px solid rgba(255,255,255,0.20) !important;
+        border-radius: 10px !important;
+        overflow: hidden;
+    }
     div[data-testid="stNumberInput"] input {
         background: rgba(255,255,255,0.08) !important;
         color: #eef2e6 !important;
         border-radius: 10px !important;
+        caret-color: #f2c744 !important;
+    }
+    div[data-testid="stNumberInput"] button {
+        background: rgba(255,255,255,0.14) !important;
+        border-left: 1px solid rgba(255,255,255,0.20) !important;
+    }
+    div[data-testid="stNumberInput"] button svg {
+        fill: #eef2e6 !important;
+        color: #eef2e6 !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -707,16 +731,59 @@ def get_urgency(is_healthy: bool, severity_level, stage_name: str, weather_risk_
     return {"emoji": "🟡", "label": "Monitor closely", "detail": "Continue monitoring your crop regularly."}
 
 
-# ---------- Upload + Result ----------
+# ==========================================================================
+# ---------- STEP 1: Upload photo ----------
+# ==========================================================================
 st.markdown('<div class="section-header">📸 Scan a crop leaf</div>', unsafe_allow_html=True)
+st.markdown('<div class="upload-panel-label">Drag a leaf photo below, or click to browse</div>', unsafe_allow_html=True)
+uploaded = st.file_uploader("", type=["jpg", "png", "jpeg"], label_visibility="collapsed")
+
+img = None
+if uploaded:
+    img = Image.open(uploaded).convert("RGB")
+
+# ==========================================================================
+# ---------- STEP 2: Ask crop details BEFORE showing the AI result ----------
+# (moved up from the old "NEW FEATURE 7" block so farmers answer these
+#  questions first, then see the detection result below)
+# ==========================================================================
+crop_age_days = 30
+previously_affected = "Not sure"
+include_weather = False
+temp_c, humidity_pct = None, None
+
+if uploaded:
+    st.markdown('<div class="section-header">🌱 Tell us about your crop</div>', unsafe_allow_html=True)
+    age_col, weather_col = st.columns([1, 1], gap="large")
+
+    with age_col:
+        st.markdown('<div class="upload-panel-label">How many days ago was this crop planted?</div>', unsafe_allow_html=True)
+        crop_age_days = st.number_input(
+            "Crop age (days)", min_value=1, max_value=365, value=30, step=1,
+            help="For example: 10, 25, 45, 60 or 90 days", label_visibility="collapsed"
+        )
+        st.markdown(f"**Crop Age:** {crop_age_days} days")
+
+        previously_affected = st.selectbox(
+            "Has this crop shown this disease before?",
+            ["Not sure", "No, first time", "Yes, it had this issue before"]
+        )
+
+    with weather_col:
+        include_weather = st.checkbox("I know the current weather conditions (optional)")
+        if include_weather:
+            temp_c = st.number_input("Current temperature (°C)", min_value=0, max_value=55, value=28, step=1)
+            humidity_pct = st.number_input("Current humidity (%)", min_value=0, max_value=100, value=70, step=1)
+
+# ==========================================================================
+# ---------- STEP 3: Detection Result (shown after the questions above) ----
+# ==========================================================================
+st.markdown('<div class="section-header">🔍 Detection result</div>', unsafe_allow_html=True)
 
 col_upload, col_result = st.columns([1, 1.2], gap="large")
 
 with col_upload:
-    st.markdown('<div class="upload-panel-label">Drag a leaf photo below, or click to browse</div>', unsafe_allow_html=True)
-    uploaded = st.file_uploader("", type=["jpg", "png", "jpeg"], label_visibility="collapsed")
-    if uploaded:
-        img = Image.open(uploaded).convert("RGB")
+    if img is not None:
         st.image(img, use_container_width=True)
 
 with col_result:
@@ -847,35 +914,15 @@ with col_result:
             </div>
         """, unsafe_allow_html=True)
 
-# ======================================================
-# === NEW FEATURE 7: CROP AGE, GROWTH STAGE & DETAILED RECOMMENDATION ===
-# ======================================================
+# ==========================================================================
+# ---------- STEP 4: Growth stage & detailed recommendation ----------------
+# (uses the crop-age / previously-affected / weather answers collected in
+#  STEP 2, together with the detection result from STEP 3)
+# ==========================================================================
 if uploaded:
     st.markdown('<div class="section-header">🌱 Crop Age & Detailed Recommendation</div>', unsafe_allow_html=True)
 
     crop_name = info.get("crop") or "Your crop"
-
-    age_col, weather_col = st.columns([1, 1], gap="large")
-
-    with age_col:
-        st.markdown('<div class="upload-panel-label">How many days ago was this crop planted?</div>', unsafe_allow_html=True)
-        crop_age_days = st.number_input(
-            "Crop age (days)", min_value=1, max_value=365, value=30, step=1,
-            help="For example: 10, 25, 45, 60 or 90 days", label_visibility="collapsed"
-        )
-        st.markdown(f"**Crop Age:** {crop_age_days} days")
-
-        previously_affected = st.selectbox(
-            "Has this crop shown this disease before?",
-            ["Not sure", "No, first time", "Yes, it had this issue before"]
-        )
-
-    with weather_col:
-        include_weather = st.checkbox("I know the current weather conditions (optional)")
-        temp_c, humidity_pct = None, None
-        if include_weather:
-            temp_c = st.number_input("Current temperature (°C)", min_value=0, max_value=55, value=28, step=1)
-            humidity_pct = st.number_input("Current humidity (%)", min_value=0, max_value=100, value=70, step=1)
 
     # --- Growth stage (crop-specific where available) ---
     stage_info = get_growth_stage(crop_name, crop_age_days)
