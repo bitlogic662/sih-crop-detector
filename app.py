@@ -461,14 +461,26 @@ UI_TRANSLATIONS = {
 }
 
 # Sidebar Language Selector
+LANGUAGE_OPTIONS = list(LANGUAGES.keys())  # English is always index 0 / always selectable
+
+# Ensure a valid default (English) is set on first run, and that the stored
+# selection is always one of the valid options so repeated switching
+# (English -> Kannada -> English -> Marathi -> English -> Hindi -> English ...)
+# never gets stuck or reset unexpectedly across Streamlit reruns.
+if (
+    "global_language_selector" not in st.session_state
+    or st.session_state["global_language_selector"] not in LANGUAGE_OPTIONS
+):
+    st.session_state["global_language_selector"] = LANGUAGE_OPTIONS[0]
+
 st.sidebar.markdown("### 🌐 Language / भाषा / भाषा / ಭಾಷೆ")
 selected_language = st.sidebar.selectbox(
     "Select language",
-    list(LANGUAGES.keys()),
+    LANGUAGE_OPTIONS,
     key="global_language_selector",
     label_visibility="collapsed"
 )
-CURRENT_LANG = LANGUAGES[selected_language]
+CURRENT_LANG = LANGUAGES.get(selected_language, "en")
 
 def translate(text):
     """Robust centralized text translation helper function."""
@@ -1058,12 +1070,33 @@ def validate_prediction(img, raw_preds, class_names):
         return False, "Image appears too blurry or lacks visible detail. Please provide a sharp photo.", 0.0, ""
 
     # 3. Model Prediction Confidence Threshold
-    idx = np.argmax(raw_preds[0])
-    conf = float(raw_preds[0][idx]) * 100.0
+    probs = np.array(raw_preds[0], dtype=np.float64)
+    idx = int(np.argmax(probs))
+    conf = float(probs[idx]) * 100.0
     pred_class = class_names[idx]
 
     if conf < CONFIDENCE_THRESHOLD:
         return False, "The model is not confident enough in this image prediction. Please ensure it is a clear leaf photo.", conf, pred_class
+
+    # 4. Unsupported-subject check (person, animal, building, food, screenshot, etc.)
+    # A genuine, clearly recognized crop leaf produces a sharply "peaked" probability
+    # distribution (one class clearly ahead of the rest). Photos of subjects the model
+    # was never trained on tend to produce a much flatter / more ambiguous distribution
+    # even when the single top score happens to clear CONFIDENCE_THRESHOLD. We reuse
+    # the same probs the model already produced, so the prediction system itself is
+    # unchanged — this only adds an extra sanity check around it.
+    sorted_probs = np.sort(probs)[::-1]
+    top1 = float(sorted_probs[0])
+    top2 = float(sorted_probs[1]) if len(sorted_probs) > 1 else 0.0
+    margin = (top1 - top2) * 100.0
+
+    eps = 1e-9
+    entropy = float(-np.sum(probs * np.log(probs + eps)))
+    max_entropy = float(np.log(len(probs))) if len(probs) > 1 else 1.0
+    normalized_entropy = entropy / max_entropy if max_entropy > 0 else 0.0
+
+    if margin < 12.0 or normalized_entropy > 0.75:
+        return False, "❌ This image does not appear to be a supported crop leaf image. Please upload or capture a clear photo of a supported crop leaf.", conf, pred_class
 
     return True, "", conf, pred_class
 
