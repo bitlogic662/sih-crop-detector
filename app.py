@@ -478,7 +478,6 @@ if st.session_state.get("global_language_selector") not in _language_options:
 selected_language = st.sidebar.selectbox(
     "Select language",
     _language_options,
-    index=_language_options.index(st.session_state["global_language_selector"]),
     key="global_language_selector",
     label_visibility="collapsed"
 )
@@ -499,59 +498,23 @@ def translate(text):
     return out
 
 # Override Streamlit components to automatically apply translation
-#
-# IMPORTANT: the `streamlit` module object is cached (imported once) and
-# persists across Streamlit script reruns within the same session — only
-# the script's own top-level code re-executes on every rerun, not the
-# `streamlit` package itself. Because of that, naively doing
-# `_original_selectbox = st.selectbox` on every rerun would, after the
-# first rerun, capture the *already-wrapped* function from the previous
-# run instead of the real native Streamlit function, causing translation
-# wrappers to stack endlessly (each rerun adding another translation
-# pass on top of the last). That stacking is what corrupted widget
-# return values/state and stopped the UI from cleanly reverting to
-# English. To prevent this, the true native functions are captured and
-# stashed on the `st` module exactly once per process; every rerun after
-# that reuses the same stashed originals.
-if not hasattr(st, "_trial_native_funcs"):
-    st._trial_native_funcs = {
-        "markdown": st.markdown,
-        "caption": st.caption,
-        "info": st.info,
-        "warning": st.warning,
-        "error": st.error,
-        "success": st.success,
-        "write": st.write,
-        "button": st.button,
-        "form_submit_button": st.form_submit_button,
-        "selectbox": st.selectbox,
-        "checkbox": st.checkbox,
-        "radio": st.radio,
-        "text_input": st.text_input,
-        "number_input": st.number_input,
-        "file_uploader": st.file_uploader,
-        "camera_input": st.camera_input,
-        "spinner": st.spinner,
-    }
-
-_native = st._trial_native_funcs
-_original_markdown = _native["markdown"]
-_original_caption = _native["caption"]
-_original_info = _native["info"]
-_original_warning = _native["warning"]
-_original_error = _native["error"]
-_original_success = _native["success"]
-_original_write = _native["write"]
-_original_button = _native["button"]
-_original_form_submit_button = _native["form_submit_button"]
-_original_selectbox = _native["selectbox"]
-_original_checkbox = _native["checkbox"]
-_original_radio = _native["radio"]
-_original_text_input = _native["text_input"]
-_original_number_input = _native["number_input"]
-_original_file_uploader = _native["file_uploader"]
-_original_camera_input = _native["camera_input"]
-_original_spinner = _native["spinner"]
+_original_markdown = st.markdown
+_original_caption = st.caption
+_original_info = st.info
+_original_warning = st.warning
+_original_error = st.error
+_original_success = st.success
+_original_write = st.write
+_original_button = st.button
+_original_form_submit_button = st.form_submit_button
+_original_selectbox = st.selectbox
+_original_checkbox = st.checkbox
+_original_radio = st.radio
+_original_text_input = st.text_input
+_original_number_input = st.number_input
+_original_file_uploader = st.file_uploader
+_original_camera_input = st.camera_input
+_original_spinner = st.spinner
 
 def _translated_markdown(body, *args, **kwargs):
     return _original_markdown(translate(body), *args, **kwargs)
