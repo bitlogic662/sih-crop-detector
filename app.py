@@ -3,7 +3,9 @@ from tensorflow.keras.models import load_model
 from PIL import Image, UnidentifiedImageError
 import numpy as np
 import json
+import io
 from collections import Counter
+from gtts import gTTS
 
 st.set_page_config(
     page_title="KrishiRakshak AI - Crop Disease Detection",
@@ -795,6 +797,36 @@ def get_soil_advice(soil_type: str):
     return SOIL_ADVICE.get(soil_type, SOIL_ADVICE["Not sure"])
 
 
+# ======================================================
+# === TEXT-TO-SPEECH (VOICE OUTPUT) ===
+# ======================================================
+@st.cache_data(show_spinner=False)
+def text_to_speech_bytes(text: str, lang_code: str):
+    """
+    Converts a block of text into spoken audio (mp3 bytes) using gTTS, in the
+    given language code (en/hi/mr/kn). Cached so repeated clicks for the same
+    text+language don't re-hit the network. Returns None if generation fails
+    (e.g. no internet), so the caller can show a friendly warning instead of
+    crashing.
+    """
+    try:
+        clean_text = (
+            text.replace("<br>", ". ")
+                .replace("&nbsp;", " ")
+                .replace("<b>", "").replace("</b>", "")
+                .strip()
+        )
+        if not clean_text:
+            return None
+        tts = gTTS(text=clean_text, lang=lang_code)
+        buf = io.BytesIO()
+        tts.write_to_fp(buf)
+        buf.seek(0)
+        return buf.read()
+    except Exception:
+        return None
+
+
 def get_recurrence_advice(previously_affected: str, occurrence_count: int):
     """
     Escalates advice based on how many times this crop has shown the SAME
@@ -1053,6 +1085,21 @@ def display_image_result(entry, lang_choice, lang_map):
                 <div style="color:#eef2e6; line-height:1.6;">{info[treatment_key]}</div>
             </div>
         """, unsafe_allow_html=True)
+
+        # ---- Voice output for this photo's result ----
+        audio_text = (
+            f"{info['display']}. "
+            f"{'Healthy' if is_healthy else severity_labels.get(info['severity'], '')}. "
+            f"Confidence {confidence:.0f} percent. "
+            f"Recommended action: {info[treatment_key]}"
+        )
+        if st.button("🔊 Listen to this result", key=f"audio_btn_{entry['index']}"):
+            with st.spinner("Generating audio..."):
+                audio_bytes = text_to_speech_bytes(audio_text, lang_code)
+            if audio_bytes:
+                st.audio(audio_bytes, format="audio/mp3")
+            else:
+                st.warning("Couldn't generate audio right now — please check your internet connection and try again.")
 
 
 def display_overall_dashboard(overall):
@@ -1447,6 +1494,35 @@ if st.session_state.analysis_results:
             "while spraying, and consult your local Krishi Vibhag extension officer or agronomist for "
             "confirmation before applying any chemical treatment."
         )
+
+        # ---- Voice output for the full recommendation summary ----
+        st.markdown('<div class="subsection-title">🔊 Voice Summary</div>', unsafe_allow_html=True)
+        lang_code_summary, treatment_key_summary = lang_map[lang_choice]
+        summary_parts = [
+            f"Crop: {crop_label}. Growth stage: {stage_name}.",
+            "No disease was detected. Continue regular monitoring." if overall_is_healthy else
+            f"Most detected condition: {overall['most_common_disease']}. Overall severity: {severity_level_str}.",
+        ]
+        if not overall_is_healthy:
+            pesticide_for_audio = get_pesticide_recommendation(overall_key) if overall_key else None
+            if pesticide_for_audio:
+                summary_parts.append(
+                    f"Recommended product: {pesticide_for_audio['product']}, at rate {pesticide_for_audio['rate']}."
+                )
+            summary_parts.append(f"Soil guidance: {get_soil_advice(finfo.get('soil_type', 'Not sure'))}")
+            recurrence_for_audio = get_recurrence_advice(finfo["previously_affected"], finfo.get("disease_occurrence_count", 0))
+            if recurrence_for_audio:
+                summary_parts.append(recurrence_for_audio["message"])
+        summary_parts.append(f"Urgency: {urgency['label']}. {urgency['detail']}")
+        full_summary_text = " ".join(summary_parts)
+
+        if st.button("🔊 Listen to full recommendation summary", key="audio_btn_summary"):
+            with st.spinner("Generating audio..."):
+                summary_audio_bytes = text_to_speech_bytes(full_summary_text, lang_code_summary)
+            if summary_audio_bytes:
+                st.audio(summary_audio_bytes, format="audio/mp3")
+            else:
+                st.warning("Couldn't generate audio right now — please check your internet connection and try again.")
 
 # ---------- Helpline ----------
 st.markdown('<div class="section-header">📞 Farmer helpline & support</div>', unsafe_allow_html=True)
