@@ -68,9 +68,9 @@ def assess_weather_risk(temp_c, humidity_pct):
 # ---------- MULTI-LANGUAGE UI SUPPORT ----------
 LANGUAGES = {
     "English": "en",
-    "हिंदी (Hindi)": "hi",
-    "मराठी (Marathi)": "mr",
-    "ಕನ್ನಡ (Kannada)": "kn",
+    "ಕನ್ನಡ": "kn",
+    "हिन्दी": "hi",
+    "मराठी": "mr",
 }
 
 UI_TRANSLATIONS = {
