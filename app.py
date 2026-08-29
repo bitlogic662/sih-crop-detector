@@ -66,19 +66,6 @@ def assess_weather_risk(temp_c, humidity_pct):
         return "Low", "Current temperature and humidity are less favorable for rapid disease spread, but continue routine monitoring."
 
 # ---------- MULTI-LANGUAGE UI SUPPORT ----------
-# Stable internal language codes. These are the ONLY values ever stored
-# in st.session_state for the language selector. Display names (native
-# script) are looked up separately via format_func, so changing the UI
-# language never changes the underlying widget value, which is what was
-# causing the selector to get "stuck" when switching back to English.
-LANGUAGE_CODES = ["en", "hi", "mr", "kn"]
-LANGUAGE_NAMES = {
-    "en": "English",
-    "hi": "हिंदी (Hindi)",
-    "mr": "मराठी (Marathi)",
-    "kn": "ಕನ್ನಡ (Kannada)",
-}
-
 UI_TRANSLATIONS = {
     "en": {},
     "hi": {
@@ -480,7 +467,7 @@ UI_TRANSLATIONS = {
         "Detection result": "ಪತ್ತೆ ಫಲಿತಾಂಶ",
         "Unsupported image": "ಬೆಂಬಲವಿಲ್ಲದ ಚಿತ್ರ",
         "❌ This image does not appear to be a supported crop leaf image. Please upload or capture a clear photo of a supported crop leaf.": "❌ ಈ ಚಿತ್ರವು ಬೆಂಬಲಿತ ಬೆಳೆ ಎಲೆಯ ಚಿತ್ರವಾಗಿರುವಂತೆ ಕಾಣುತ್ತಿಲ್ಲ. ದಯವಿಟ್ಟು ಬೆಂಬಲಿತ ಬೆಳೆ ಎಲೆಯ ಸ್ಪಷ್ಟ ಫೋಟೋವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ ಅಥವಾ ತೆಗೆದುಕೊಳ್ಳಿ.",
-        "Image resolution is too low. Please upload a clearer photo.": "ಚಿತ್ರದ রেজಲ್ಯೂಶನ್ ತುಂಬಾ ಕಡಿಮೆಯಾಗಿದೆ. ದಯವಿಟ್ಟು ಸ್ಪಷ್ಟವಾದ ಫೋಟೋವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ.",
+        "Image resolution is too low. Please upload a clearer photo.": "ಚಿತ್ರದ ರೆಜಲ್ಯೂಶನ್ ತುಂಬಾ ಕಡಿಮೆಯಾಗಿದೆ. ದಯವಿಟ್ಟು ಸ್ಪಷ್ಟವಾದ ಫೋಟೋವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ.",
         "Image appears too blurry or lacks visible detail. Please provide a sharp photo.": "ಚಿತ್ರವು ತುಂಬಾ ಮಸುಕಾಗಿ ಕಾಣುತ್ತದೆ ಅಥವಾ ವಿವರಗಳ ಕೊರತೆಯಿದೆ. ದಯವಿಟ್ಟು ಸ್ಪಷ್ಟವಾದ ಫೋಟೋವನ್ನು ನೀಡಿ.",
         "The model is not confident enough in this image prediction. Please ensure it is a clear leaf photo.": "ಈ ಚಿತ್ರದ ಮುನ್ನೋಟದ ಬಗ್ಗೆ ಮಾದರಿಗೆ ಸಾಕಷ್ಟು ವಿಶ್ವಾಸವಿಲ್ಲ. ದಯವಿಟ್ಟು ಇದು ಸ್ಪಷ್ಟ ಎಲೆಯ ಫೋಟೋ ಎಂದು ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಿ.",
         "No valid crop leaf images were found among the inputs provided.": "ನೀಡಿದ ಇನ್‌ಪುಟ್‌ಗಳಲ್ಲಿ ಯಾವುದೇ ಸಿಂಧು ಬೆಳೆ ಎಲೆಯ ಚಿತ್ರಗಳು ಕಂಡುಬಂದಿಲ್ಲ.",
@@ -515,25 +502,14 @@ UI_TRANSLATIONS = {
     }
 }
 
-# Sidebar Language Selector
-# IMPORTANT: this uses the plain, un-wrapped st.sidebar.selectbox (the
-# translation wrappers further below only ever touch st.selectbox /
-# st.selectbox-derived calls made AFTER this point, and are never applied
-# to this widget). The widget's stored value is always one of
-# LANGUAGE_CODES ("en"/"hi"/"mr"/"kn") — format_func only changes what is
-# displayed, never what is stored — so switching languages back and forth
-# any number of times (including back to English) always works.
-if "current_language" not in st.session_state:
-    st.session_state.current_language = "en"
-
-st.sidebar.markdown("### 🌐 Language / भाषा / भाषा / ಭಾಷೆ")
-CURRENT_LANG = st.sidebar.selectbox(
-    "Select language",
-    LANGUAGE_CODES,
-    format_func=lambda code: LANGUAGE_NAMES[code],
-    key="current_language",
-    label_visibility="collapsed"
-)
+# ---------- STABLE LANGUAGE CODES (used for widget state — never translated) ----------
+LANGUAGE_CODES = ["en", "hi", "mr", "kn"]
+LANGUAGE_DISPLAY_NAMES = {
+    "en": "English",
+    "hi": "हिंदी (Hindi)",
+    "mr": "मराठी (Marathi)",
+    "kn": "ಕನ್ನಡ (Kannada)"
+}
 
 def translate(text):
     """Robust centralized text translation helper function."""
@@ -549,7 +525,8 @@ def translate(text):
             out = out.replace(source, target)
     return out
 
-# Override Streamlit components to automatically apply translation
+# Capture originals BEFORE they get overridden below, so the language
+# selector (and anything else that needs it) can always bypass translation.
 _original_markdown = st.markdown
 _original_caption = st.caption
 _original_info = st.info
@@ -597,6 +574,10 @@ def _translated_submit(label, *args, **kwargs):
     return _original_form_submit_button(translate(label), *args, **kwargs)
 
 def _translated_selectbox(label, options, *args, **kwargs):
+    # Internal values (options) always stay as the original English source
+    # values. Only the displayed label and displayed option text are
+    # translated, so switching languages never breaks widget state.
+    options = list(options)
     display_options = [translate(x) if isinstance(x, str) else x for x in options]
     idx = _original_selectbox(translate(label), display_options, *args, **kwargs)
     try:
@@ -609,6 +590,7 @@ def _translated_checkbox(label, *args, **kwargs):
     return _original_checkbox(translate(label), *args, **kwargs)
 
 def _translated_radio(label, options, *args, **kwargs):
+    options = list(options)
     display_options = [translate(x) if isinstance(x, str) else x for x in options]
     res = _original_radio(translate(label), display_options, *args, **kwargs)
     try:
@@ -649,6 +631,30 @@ st.number_input = _translated_number_input
 st.file_uploader = _translated_file_uploader
 st.camera_input = _translated_camera_input
 st.spinner = _translated_spinner
+
+# ---------- Sidebar Language Selector ----------
+# IMPORTANT: this selector uses the ORIGINAL, un-wrapped selectbox
+# (_original_selectbox) captured above, and stores ONLY stable internal
+# language codes ("en" / "hi" / "mr" / "kn") as its widget value via
+# st.session_state["current_language"]. The translated wrapper
+# (_translated_selectbox / the monkey-patched st.selectbox) is
+# deliberately NOT used here, because that wrapper's displayed option
+# text changes with the language — which is exactly what caused the
+# widget state to get confused when switching back to English.
+st.sidebar.markdown("### 🌐 Language / भाषा / भाषा / ಭಾಷೆ")
+
+if "current_language" not in st.session_state:
+    st.session_state.current_language = "en"
+
+selected_language_code = _original_selectbox(
+    "Select language",
+    LANGUAGE_CODES,
+    format_func=lambda code: LANGUAGE_DISPLAY_NAMES[code],
+    key="current_language",
+    label_visibility="collapsed"
+)
+
+CURRENT_LANG = selected_language_code
 
 # ---------- Custom styling ----------
 st.markdown("""
