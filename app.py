@@ -66,11 +66,17 @@ def assess_weather_risk(temp_c, humidity_pct):
         return "Low", "Current temperature and humidity are less favorable for rapid disease spread, but continue routine monitoring."
 
 # ---------- MULTI-LANGUAGE UI SUPPORT ----------
-LANGUAGES = {
-    "English": "en",
-    "ಕನ್ನಡ": "kn",
-    "हिन्दी": "hi",
-    "मराठी": "mr",
+# Stable internal language codes. These are the ONLY values ever stored
+# in st.session_state for the language selector. Display names (native
+# script) are looked up separately via format_func, so changing the UI
+# language never changes the underlying widget value, which is what was
+# causing the selector to get "stuck" when switching back to English.
+LANGUAGE_CODES = ["en", "hi", "mr", "kn"]
+LANGUAGE_NAMES = {
+    "en": "English",
+    "hi": "हिंदी (Hindi)",
+    "mr": "मराठी (Marathi)",
+    "kn": "ಕನ್ನಡ (Kannada)",
 }
 
 UI_TRANSLATIONS = {
@@ -510,14 +516,24 @@ UI_TRANSLATIONS = {
 }
 
 # Sidebar Language Selector
+# IMPORTANT: this uses the plain, un-wrapped st.sidebar.selectbox (the
+# translation wrappers further below only ever touch st.selectbox /
+# st.selectbox-derived calls made AFTER this point, and are never applied
+# to this widget). The widget's stored value is always one of
+# LANGUAGE_CODES ("en"/"hi"/"mr"/"kn") — format_func only changes what is
+# displayed, never what is stored — so switching languages back and forth
+# any number of times (including back to English) always works.
+if "current_language" not in st.session_state:
+    st.session_state.current_language = "en"
+
 st.sidebar.markdown("### 🌐 Language / भाषा / भाषा / ಭಾಷೆ")
-selected_language = st.sidebar.selectbox(
+CURRENT_LANG = st.sidebar.selectbox(
     "Select language",
-    list(LANGUAGES.keys()),
-    key="global_language_selector",
+    LANGUAGE_CODES,
+    format_func=lambda code: LANGUAGE_NAMES[code],
+    key="current_language",
     label_visibility="collapsed"
 )
-CURRENT_LANG = LANGUAGES[selected_language]
 
 def translate(text):
     """Robust centralized text translation helper function."""
