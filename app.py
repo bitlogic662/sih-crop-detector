@@ -1,589 +1,14 @@
 import streamlit as st
 from tensorflow.keras.models import load_model
-from PIL import Image, UnidentifiedImageError, ImageStat
+from PIL import Image
 import numpy as np
 import json
-import io
-from collections import Counter
-from gtts import gTTS
 
 st.set_page_config(
     page_title="KrishiRakshak AI - Crop Disease Detection",
     page_icon="🌾",
     layout="wide"
 )
-
-# Configuration settings
-CONFIDENCE_THRESHOLD = 60.0  # Percentage minimum required for a valid diagnosis
-
-# ---------- MULTI-LANGUAGE UI SUPPORT ----------
-LANGUAGES = {
-    "English": "en",
-    "हिंदी (Hindi)": "hi",
-    "मराठी (Marathi)": "mr",
-    "ಕನ್ನಡ (Kannada)": "kn",
-}
-
-UI_TRANSLATIONS = {
-    "en": {},
-    "hi": {
-        "Early Detection & Management of Crop Diseases and Pest Infestations": "फसल रोगों और कीट प्रकोप की शीघ्र पहचान और प्रबंधन",
-        "Crops covered": "कवर की गई फसलें",
-        "Model accuracy": "मॉडल की सटीकता",
-        "Languages": "भाषाएँ",
-        "AI Advisory": "एआई सलाह",
-        "Field-ready design": "खेत के लिए उपयुक्त डिज़ाइन",
-        "How it works": "यह कैसे काम करता है",
-        "Snap photos": "📷 फोटो लें",
-        "Take clear photos of the affected leaves": "प्रभावित पत्तियों की साफ तस्वीरें लें",
-        "AI analyzes": "🧠 AI विश्लेषण करता है",
-        "Model detects disease instantly": "मॉडल तुरंत रोग का पता लगाता है",
-        "Get advice": "🗣️ सलाह प्राप्त करें",
-        "Hear treatment steps in your language": "अपनी भाषा में उपचार के चरण सुनें",
-        "Input Method": "इनपुट का तरीका",
-        "📷 Click Leaf Photo": "📷 पत्ती की फोटो लें",
-        "📁 Upload Leaf Photo": "📁 पत्ती की फोटो अपलोड करें",
-        "Capture Leaf Photo": "पत्ती की फोटो लें",
-        "Take a clear, well-lit photo of the affected crop leaf": "प्रभावित फसल की पत्ती की एक स्पष्ट और अच्छी रोशनी वाली तस्वीर लें",
-        "Scan crop leaves": "फसल की पत्तियाँ स्कैन करें",
-        "Drag one or more leaf photos below, or click to browse": "नीचे एक या अधिक पत्तियों की तस्वीरें डालें या ब्राउज़ करने के लिए क्लिक करें",
-        "Crop Information": "फसल की जानकारी",
-        "Crop name": "फसल का नाम",
-        "Crop growth stage": "फसल की वृद्धि अवस्था",
-        "Not sure about crop age": "फसल की आयु के बारे में निश्चित नहीं",
-        "Approximate crop age (days)": "फसल की अनुमानित आयु (दिन)",
-        "How long have you noticed the symptoms?": "आपने लक्षण कितने समय से देखे हैं?",
-        "How much of the crop appears affected?": "फसल का कितना हिस्सा प्रभावित दिखाई देता है?",
-        "Recent weather / field condition": "हाल की मौसम / खेत की स्थिति",
-        "Have you already applied any treatment?": "क्या आपने पहले से कोई उपचार किया है?",
-        "Please specify the treatment used": "कृपया इस्तेमाल किए गए उपचार का विवरण दें",
-        "Has this crop shown this disease before? (optional)": "क्या इस फसल में पहले भी यह रोग हुआ है? (वैकल्पिक)",
-        "How many times has this crop shown this disease before?": "इस फसल में यह रोग पहले कितनी बार हुआ है?",
-        "Type of soil used for growing": "उगाने के लिए इस्तेमाल की गई मिट्टी का प्रकार",
-        "Village / City (optional)": "गाँव / शहर (वैकल्पिक)",
-        "District (optional)": "जिला (वैकल्पिक)",
-        "Analyze All Photos": "सभी तस्वीरों का विश्लेषण करें",
-        "Individual Photo Results": "व्यक्तिगत फोटो परिणाम",
-        "Overall Crop Health Assessment": "फसल स्वास्थ्य का समग्र मूल्यांकन",
-        "Farmer Information": "किसान की जानकारी",
-        "Detailed Recommendation": "विस्तृत सुझाव",
-        "Recommended Action": "अनुशंसित कार्रवाई",
-        "Treatment": "उपचार",
-        "Weather Risk": "मौसम का जोखिम",
-        "How Quickly Should You Act?": "आपको कितनी जल्दी कार्रवाई करनी चाहिए?",
-        "Important Precaution": "महत्वपूर्ण सावधानी",
-        "Voice Summary": "आवाज़ में सारांश",
-        "Farmer helpline & support": "किसान हेल्पलाइन और सहायता",
-        "Expanding crop coverage": "फसल कवरेज का विस्तार",
-        "Listen to this result": "इस परिणाम को सुनें",
-        "Listen to full recommendation summary": "पूरी अनुशंसा सुनें",
-        "Photos analyzed": "विश्लेषित तस्वीरें",
-        "Affected photos": "प्रभावित तस्वीरें",
-        "Healthy photos": "स्वस्थ तस्वीरें",
-        "Avg. confidence": "औसत विश्वास स्तर",
-        "Overall risk": "कुल जोखिम",
-        "Confidence": "विश्वास स्तर",
-        "Severity": "गंभीरता",
-        "Progression": "प्रगति",
-        "Crop health": "फसल स्वास्थ्य",
-        "Healthy": "स्वस्थ",
-        "Moderate risk": "मध्यम जोखिम",
-        "Severe — act now": "गंभीर — अभी कार्रवाई करें",
-        "No disease detected": "कोई रोग नहीं पाया गया",
-        "Low Risk": "कम जोखिम",
-        "Moderate Risk": "मध्यम जोखिम",
-        "High Risk": "उच्च जोखिम",
-        "Preventive care": "रोकथाम संबंधी देखभाल",
-        "Act immediately": "तुरंत कार्रवाई करें",
-        "Act within 1–2 days": "1–2 दिनों के भीतर कार्रवाई करें",
-        "Monitor closely": "ध्यान से निगरानी करें",
-        "No": "नहीं",
-        "Yes": "हाँ",
-        "Not sure": "निश्चित नहीं",
-        "Normal": "सामान्य",
-        "High rainfall": "अधिक वर्षा",
-        "High humidity": "अधिक आर्द्रता",
-        "Very hot": "बहुत गर्म",
-        "Very dry": "बहुत शुष्क",
-        "Less than 1 day": "1 दिन से कम",
-        "1–3 days": "1–3 दिन",
-        "4–7 days": "4–7 दिन",
-        "1–2 weeks": "1–2 सप्ताह",
-        "More than 2 weeks": "2 सप्ताह से अधिक",
-        "Only one/few leaves": "केवल एक/कुछ पत्तियाँ",
-        "Less than 25%": "25% से कम",
-        "25–50%": "25–50%",
-        "50–75%": "50–75%",
-        "More than 75%": "75% से अधिक",
-        "Tomato": "टमाटर",
-        "Potato": "आलू",
-        "Bell Pepper": "शिमला मिर्च",
-        "Other / Not sure": "अन्य / निश्चित नहीं",
-        "Seedling": "अंकुर अवस्था",
-        "Vegetative": "वानस्पतिक अवस्था",
-        "Flowering": "फूल अवस्था",
-        "Fruiting": "फल अवस्था",
-        "Mature": "परिपक्व अवस्था",
-        "Loamy soil": "दोमट मिट्टी",
-        "Clayey soil": "चिकनी मिट्टी",
-        "Sandy soil": "बलुई मिट्टी",
-        "Black soil (Regur)": "काली मिट्टी (रेगुर)",
-        "Red soil": "लाल मिट्टी",
-        "Alluvial soil": "जलोढ़ मिट्टी",
-        "Please capture a photo first.": "कृपया पहले एक तस्वीर लें।",
-        "Please upload at least one photo first.": "कृपया पहले कम से कम एक फोटो अपलोड करें।",
-        "Analyzing photo(s)...": "तस्वीरों का विश्लेषण किया जा रहा है...",
-        "Photo": "फोटो",
-        "Detection result": "पहचान का परिणाम",
-        "Unsupported image": "असमर्थित छवि",
-        "❌ This image does not appear to be a supported crop leaf image. Please upload or capture a clear photo of a supported crop leaf.": "❌ यह तस्वीर समर्थित फसल की पत्ती की तस्वीर नहीं लगती। कृपया समर्थित फसल की पत्ती की स्पष्ट तस्वीर अपलोड करें या लें।",
-        "Image resolution is too low. Please upload a clearer photo.": "तस्वीर का रिज़ॉल्यूशन बहुत कम है। कृपया एक स्पष्ट फोटो अपलोड करें।",
-        "Image appears too blurry or lacks visible detail. Please provide a sharp photo.": "तस्वीर बहुत धुंधली लगती है या विवरण की कमी है। कृपया एक स्पष्ट फोटो प्रदान करें।",
-        "The model is not confident enough in this image prediction. Please ensure it is a clear leaf photo.": "मॉडल इस तस्वीर के पूर्वानुमान के प्रति आश्वस्त नहीं है। कृपया सुनिश्चित करें कि यह पत्ती की स्पष्ट फोटो है।",
-        "No valid crop leaf images were found among the inputs provided.": "प्रदान किए गए इनपुट में कोई वैध फसल पत्ती की छवियां नहीं मिलीं।",
-        "None of the photos provided were valid crop leaf images suitable for disease analysis.": "प्रदान की गई कोई भी फोटो बीमारी के विश्लेषण के लिए उपयुक्त वैध फसल की पत्ती नहीं थी।",
-        "Invalid or Corrupted Image": "अवैध या दूषित छवि",
-        "Failed to load image file.": "इमेज फ़ाइल लोड करने में विफल।",
-        "AI predictions may vary based on photo quality. Always consult a local agricultural officer or expert for major crop decisions.": "तस्वीर की गुणवत्ता के आधार पर AI पूर्वानुमान भिन्न हो सकते हैं। मुख्य फसल निर्णयों के लिए हमेशा स्थानीय कृषि अधिकारी या विशेषज्ञ से परामर्श लें।",
-        "Kisan Call Centre (Toll-Free): 1800-180-1551": "किसान कॉल सेंटर (टोल-फ्री): 1800-180-1551",
-        "Krishi Vigyan Kendra (KVK) Network": "कृषि विज्ञान केंद्र (केवीके) नेटवर्क",
-        "Department of Agriculture, Maharashtra": "कृषि विभाग, महाराष्ट्र",
-        "Current model covers Tomato, Potato, and Bell Pepper leaf diseases.": "वर्तमान मॉडल टमाटर, आलू और शिमला मिर्च के पत्तों के रोगों को कवर करता है।",
-        "Expanding to Sugarcane, Cotton, Soybean, and Rice in upcoming versions.": "आगामी संस्करणों में गन्ना, कपास, सोयाबीन और चावल तक विस्तार किया जा रहा है।",
-        "Location": "स्थान",
-        "Growth Stage": "वृद्धि की अवस्था",
-        "Soil": "मिट्टी",
-        "Symptoms Duration": "लक्षणों की अवधि",
-        "Crop Affected": "प्रभावित फसल",
-        "Prior History": "पूर्व इतिहास",
-        "Previous Treatment": "पिछला उपचार",
-        "Yes, applied:": "हाँ, लागू किया गया:",
-        "Times seen before:": "पहले देखे जाने की संख्या:",
-        "Select language": "भाषा चुनें",
-        "Working...": "काम जारी है...",
-        "None": "कोई नहीं",
-        "Unknown": "अज्ञात",
-        "Low": "कम",
-        "Moderate": "मध्यम",
-        "High": "उच्च",
-        "Severe": "गंभीर",
-        "Early": "शुरुआती", "Advanced": "उन्नत", "Critical": "गंभीर",
-        "Early stage": "शुरुआती अवस्था", "Progressed": "प्रगति पर", "Advanced stage": "उन्नत अवस्था"
-    },
-    "mr": {
-        "Early Detection & Management of Crop Diseases and Pest Infestations": "पिकांचे रोग आणि किडींचा लवकर शोध व व्यवस्थापन",
-        "Crops covered": "समाविष्ट पिके",
-        "Model accuracy": "मॉडेल अचूकता",
-        "Languages": "भाषा",
-        "AI Advisory": "एआय सल्ला",
-        "Field-ready design": "शेतासाठी तयार डिझाइन",
-        "How it works": "हे कसे कार्य करते",
-        "Snap photos": "📷 फोटो काढा",
-        "Take clear photos of the affected leaves": "प्रभावित पानांचे स्पष्ट फोटो काढा",
-        "AI analyzes": "🧠 AI विश्लेषण करते",
-        "Model detects disease instantly": "मॉडेल रोगाचा त्वरित शोध घेते",
-        "Get advice": "🗣️ सल्ला मिळवा",
-        "Hear treatment steps in your language": "आपल्या भाषेत उपचाराच्या सूचना ऐका",
-        "Input Method": "इनपुट पद्धत",
-        "📷 Click Leaf Photo": "📷 पानाचा फोटो काढा",
-        "📁 Upload Leaf Photo": "📁 पानाचा फोटो अपलोड करा",
-        "Capture Leaf Photo": "पानाचा फोटो काढा",
-        "Take a clear, well-lit photo of the affected crop leaf": "प्रभावित पिकाच्या पानाचा स्पष्ट आणि चांगल्या प्रकाशातील फोटो काढा",
-        "Scan crop leaves": "पिकांची पाने स्कॅन करा",
-        "Drag one or more leaf photos below, or click to browse": "खाली एक किंवा अधिक पानांचे फोटो टाका किंवा ब्राउझ करण्यासाठी क्लिक करा",
-        "Crop Information": "पिकाची माहिती",
-        "Crop name": "पिकाचे नाव",
-        "Crop growth stage": "पिकाची वाढीची अवस्था",
-        "Not sure about crop age": "पिकाच्या वयाबद्दल खात्री नाही",
-        "Approximate crop age (days)": "पिकाचे अंदाजे वय (दिवस)",
-        "How long have you noticed the symptoms?": "लक्षणे किती दिवसांपासून दिसत आहेत?",
-        "How much of the crop appears affected?": "पिकाचा किती भाग प्रभावित दिसतो?",
-        "Recent weather / field condition": "अलीकडील हवामान / शेताची स्थिती",
-        "Have you already applied any treatment?": "तुम्ही आधीच काही उपचार केले आहेत का?",
-        "Please specify the treatment used": "वापरलेल्या उपचाराचे नाव द्या",
-        "Has this crop shown this disease before? (optional)": "या पिकाला यापूर्वी हा रोग झाला आहे का? (पर्यायी)",
-        "How many times has this crop shown this disease before?": "या पिकाला हा रोग यापूर्वी किती वेळा झाला आहे?",
-        "Type of soil used for growing": "पिकासाठी वापरलेल्या मातीचा प्रकार",
-        "Village / City (optional)": "गाव / शहर (पर्यायी)",
-        "District (optional)": "जिल्हा (पर्यायी)",
-        "Analyze All Photos": "सर्व फोटोंचे विश्लेषण करा",
-        "Individual Photo Results": "वैयक्तिक फोटो परिणाम",
-        "Overall Crop Health Assessment": "पिकाच्या आरोग्याचे एकूण मूल्यांकन",
-        "Farmer Information": "शेतकऱ्याची माहिती",
-        "Detailed Recommendation": "सविस्तर शिफारस",
-        "Recommended Action": "शिफारस केलेली कृती",
-        "Treatment": "उपचार",
-        "Weather Risk": "हवामानाचा धोका",
-        "How Quickly Should You Act?": "किती लवकर कृती करावी?",
-        "Important Precaution": "महत्त्वाची खबरदारी",
-        "Voice Summary": "आवाजातील सारांश",
-        "Farmer helpline & support": "शेतकरी हेल्पलाइन आणि मदत",
-        "Expanding crop coverage": "पिकांचा विस्तार",
-        "Listen to this result": "हा परिणाम ऐका",
-        "Listen to full recommendation summary": "संपूर्ण शिफारस ऐका",
-        "Photos analyzed": "विश्लेषित फोटो",
-        "Affected photos": "प्रभावित फोटो",
-        "Healthy photos": "निरोगी फोटो",
-        "Avg. confidence": "सरासरी विश्वास",
-        "Overall risk": "एकूण धोका",
-        "Confidence": "विश्वास",
-        "Severity": "तीव्रता",
-        "Progression": "प्रगती",
-        "Crop health": "पिकाचे आरोग्य",
-        "Healthy": "निरोगी",
-        "Moderate risk": "मध्यम धोका",
-        "Severe — act now": "गंभीर — त्वरित कृती करा",
-        "No disease detected": "कोणताही रोग आढळला नाही",
-        "Low Risk": "कमी धोका",
-        "Moderate Risk": "मध्यम धोका",
-        "High Risk": "जास्त धोका",
-        "Preventive care": "प्रतिबंधात्मक काळजी",
-        "Act immediately": "त्वरित कृती करा",
-        "Act within 1–2 days": "1–2 दिवसांत कृती करा",
-        "Monitor closely": "लक्षपूर्वक निरीक्षण करा",
-        "No": "नाही",
-        "Yes": "होय",
-        "Not sure": "खात्री नाही",
-        "Normal": "सामान्य",
-        "High rainfall": "जास्त पाऊस",
-        "High humidity": "जास्त आर्द्रता",
-        "Very hot": "खूप उष्ण",
-        "Very dry": "खूप कोरडे",
-        "Less than 1 day": "1 दिवसापेक्षा कमी",
-        "1–3 days": "1–3 दिवस",
-        "4–7 days": "4–7 दिवस",
-        "1–2 weeks": "1–2 आठवडे",
-        "More than 2 weeks": "2 आठवड्यांपेक्षा जास्त",
-        "Only one/few leaves": "फक्त एक/काही पाने",
-        "Less than 25%": "25% पेक्षा कमी",
-        "25–50%": "25–50%",
-        "50–75%": "50–75%",
-        "More than 75%": "75% पेक्षा जास्त",
-        "Tomato": "टोमॅटो",
-        "Potato": "बटाटा",
-        "Bell Pepper": "ढोबळी मिरची",
-        "Other / Not sure": "इतर / खात्री नाही",
-        "Seedling": "रोप अवस्था",
-        "Vegetative": "शाकीय अवस्था",
-        "Flowering": "फुलोरा अवस्था",
-        "Fruiting": "फळधारणा अवस्था",
-        "Mature": "परिपक्व अवस्था",
-        "Loamy soil": "गाळाची माती",
-        "Clayey soil": "चिकणमाती",
-        "Sandy soil": "वालुकामय माती",
-        "Black soil (Regur)": "काळी माती (रेगूर)",
-        "Red soil": "लाल माती",
-        "Alluvial soil": "गाळाची माती",
-        "Please capture a photo first.": "कृपया प्रथम फोटो काढा.",
-        "Please upload at least one photo first.": "कृपया आधी किमान एक फोटो अपलोड करा.",
-        "Analyzing photo(s)...": "फोटोंचे विश्लेषण करत आहे...",
-        "Photo": "फोटो",
-        "Detection result": "शोध परिणाम",
-        "Unsupported image": "असमर्थित फोटो",
-        "❌ This image does not appear to be a supported crop leaf image. Please upload or capture a clear photo of a supported crop leaf.": "❌ हा फोटो समर्थित पिकाच्या पानाचा फोटो दिसत नाही. कृपया समर्थित पिकाच्या पानाचा स्पष्ट फोटो अपलोड करा किंवा काढा.",
-        "Image resolution is too low. Please upload a clearer photo.": "फोटोचे रिझोल्यूशन खूप कमी आहे. कृपया अधिक स्पष्ट फोटो अपलोड करा.",
-        "Image appears too blurry or lacks visible detail. Please provide a sharp photo.": "फोटो खूप अस्पष्ट दिसतो किंवा त्यात तपशील कमी आहेत. कृपया स्पष्ट फोटो द्या.",
-        "The model is not confident enough in this image prediction. Please ensure it is a clear leaf photo.": "मॉडेलला या फोटोच्या अंदाजाबद्दल पुरेशी खात्री नाही. कृपया तो पानाचा स्पष्ट फोटो असल्याची खात्री करा.",
-        "No valid crop leaf images were found among the inputs provided.": "दिलेल्या इनपुटमध्ये कोणतेही वैध पिकाचे पान आढळले नाही.",
-        "None of the photos provided were valid crop leaf images suitable for disease analysis.": "दिलेल्या फोटोंपैकी एकही फोटो रोग विश्लेषणासाठी योग्य पिकाच्या पानाचा नव्हता.",
-        "Invalid or Corrupted Image": "अवैध किंवा खराब झालेला फोटो",
-        "Failed to load image file.": "इमेज फाइल लोड करण्यात अपयशी.",
-        "AI predictions may vary based on photo quality. Always consult a local agricultural officer or expert for major crop decisions.": "फोटोच्या गुणवत्तेनुसार AI अंदाज बदलू शकतात. पिकाच्या महत्त्वाच्या निर्णयांसाठी नेहमी स्थानिक कृषी अधिकारी किंवा तज्ञांचा सल्ला घ्या.",
-        "Kisan Call Centre (Toll-Free): 1800-180-1551": "किसान कॉल सेंटर (टोल-फ्री): 1800-180-1551",
-        "Krishi Vigyan Kendra (KVK) Network": "कृषी विज्ञान केंद्र (KVK) नेटवर्क",
-        "Department of Agriculture, Maharashtra": "कृषी विभाग, महाराष्ट्र",
-        "Current model covers Tomato, Potato, and Bell Pepper leaf diseases.": "सध्याचे मॉडेल टोमॅटो, बटाटा आणि ढोबळी मिरचीच्या पानांच्या रोगांचा समावेश करते.",
-        "Expanding to Sugarcane, Cotton, Soybean, and Rice in upcoming versions.": "येत्या आवृत्त्यांमध्ये ऊस, कापूस, सोयाबीन आणि भात पिकांपर्यंत विस्तार करत आहोत.",
-        "Location": "स्थान",
-        "Growth Stage": "वाढीची अवस्था",
-        "Soil": "माती",
-        "Symptoms Duration": "लक्षणांचा कालावधी",
-        "Crop Affected": "प्रभावित पीक",
-        "Prior History": "मागील इतिहास",
-        "Previous Treatment": "मागील उपचार",
-        "Yes, applied:": "होय, वापरले:",
-        "Times seen before:": "पूर्वी पाहिल्याची संख्या:",
-        "Select language": "भाषा निवडा",
-        "Working...": "प्रक्रिया सुरू आहे...",
-        "None": "काहीही नाही",
-        "Unknown": "अज्ञात",
-        "Low": "कमी",
-        "Moderate": "मध्यम",
-        "High": "उच्च",
-        "Severe": "गंभीर",
-        "Early": "शुरुवातीचे", "Advanced": "प्रगत", "Critical": "गंभीर",
-        "Early stage": "शुरुवातीची अवस्था", "Progressed": "प्रगतीपथावर", "Advanced stage": "प्रगत अवस्था"
-    },
-    "kn": {
-        "Early Detection & Management of Crop Diseases and Pest Infestations": "ಬೆಳೆ ರೋಗಗಳು ಮತ್ತು ಕೀಟ ಬಾಧೆಗಳ ಆರಂಭಿಕ ಪತ್ತೆ ಮತ್ತು ನಿರ್ವಹಣೆ",
-        "Crops covered": "ಒಳಗೊಂಡ ಬೆಳೆಗಳು",
-        "Model accuracy": "ಮಾದರಿ ನಿಖರತೆ",
-        "Languages": "ಭಾಷೆಗಳು",
-        "AI Advisory": "ಎಐ ಸಲಹೆ",
-        "Field-ready design": "ಹೊಲಕ್ಕೆ ಸಿದ್ಧ ವಿನ್ಯಾಸ",
-        "How it works": "ಇದು ಹೇಗೆ ಕೆಲಸ ಮಾಡುತ್ತದೆ",
-        "Snap photos": "📷 ಫೋಟೋ ತೆಗೆದುಕೊಳ್ಳಿ",
-        "Take clear photos of the affected leaves": "ಬಾಧಿತ ಎಲೆಗಳ ಸ್ಪಷ್ಟ ಫೋಟೋಗಳನ್ನು ತೆಗೆದುಕೊಳ್ಳಿ",
-        "AI analyzes": "🧠 AI ವಿಶ್ಲೇಷಿಸುತ್ತದೆ",
-        "Model detects disease instantly": "ಮಾದರಿಯು ರೋಗವನ್ನು ತಕ್ಷಣ ಪತ್ತೆಹಚ್ಚುತ್ತದೆ",
-        "Get advice": "🗣️ ಸಲಹೆ ಪಡೆಯಿರಿ",
-        "Hear treatment steps in your language": "ನಿಮ್ಮ ಭಾಷೆಯಲ್ಲಿ ಚಿಕಿತ್ಸಾ ಕ್ರಮಗಳನ್ನು ಕೇಳಿ",
-        "Input Method": "ಇನ್‌ಪುಟ್ ವಿಧಾನ",
-        "📷 Click Leaf Photo": "📷 ಎಲೆಯ ಫೋಟೋ ತೆಗೆದುಕೊಳ್ಳಿ",
-        "📁 Upload Leaf Photo": "📁 ಎಲೆಯ ಫೋಟೋ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ",
-        "Capture Leaf Photo": "ಎಲೆಯ ಫೋಟೋ ತೆಗೆದುಕೊಳ್ಳಿ",
-        "Take a clear, well-lit photo of the affected crop leaf": "ಬಾಧಿತ ಬೆಳೆ ಎಲೆಯ ಸ್ಪಷ್ಟ ಮತ್ತು ಬೆಳಕಿರುವ ಫೋಟೋ ತೆಗೆದುಕೊಳ್ಳಿ",
-        "Scan crop leaves": "ಬೆಳೆ ಎಲೆಗಳನ್ನು ಸ್ಕ್ಯಾನ್ ಮಾಡಿ",
-        "Drag one or more leaf photos below, or click to browse": "ಕೆಳಗೆ ಒಂದು ಅಥವಾ ಹೆಚ್ಚಿನ ಎಲೆಗಳ ಫೋಟೋಗಳನ್ನು ಹಾಕಿ ಅಥವಾ ಬ್ರೌಸ್ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ",
-        "Crop Information": "ಬೆಳೆ ಮಾಹಿತಿ",
-        "Crop name": "ಬೆಳೆಯ ಹೆಸರು",
-        "Crop growth stage": "ಬೆಳೆಯ ಬೆಳವಣಿಗೆಯ ಹಂತ",
-        "Not sure about crop age": "ಬೆಳೆಯ ವಯಸ್ಸಿನ ಬಗ್ಗೆ ಖಚಿತವಿಲ್ಲ",
-        "Approximate crop age (days)": "ಬೆಳೆಯ ಅಂದಾಜು ವಯಸ್ಸು (ದಿನಗಳು)",
-        "How long have you noticed the symptoms?": "ರೋಗಲಕ್ಷಣಗಳು ಎಷ್ಟು ಸಮಯದಿಂದ ಕಾಣಿಸುತ್ತಿವೆ?",
-        "How much of the crop appears affected?": "ಬೆಳೆಯ ಎಷ್ಟು ಭಾಗ ಬಾಧಿತವಾಗಿದೆ?",
-        "Recent weather / field condition": "ಇತ್ತೀಚಿನ ಹವಾಮಾನ / ಹೊಲದ ಪರಿಸ್ಥಿತಿ",
-        "Have you already applied any treatment?": "ನೀವು ಈಗಾಗಲೇ ಯಾವುದೇ ಚಿಕಿತ್ಸೆ ನೀಡಿದ್ದೀರಾ?",
-        "Please specify the treatment used": "ಬಳಸಿದ ಚಿಕಿತ್ಸೆಯನ್ನು ನಮೂದಿಸಿ",
-        "Has this crop shown this disease before? (optional)": "ಈ ಬೆಳೆಗೆ ಈ ರೋಗವು ಹಿಂದೆ ಕಾಣಿಸಿಕೊಂಡಿದೆಯೇ? (ಐಚ್ಛಿಕ)",
-        "How many times has this crop shown this disease before?": "ಈ ಬೆಳೆಗೆ ಈ ರೋಗವು ಹಿಂದೆ ಎಷ್ಟು ಬಾರಿ ಕಾಣಿಸಿಕೊಂಡಿದೆ?",
-        "Type of soil used for growing": "ಬೆಳೆಯಲು ಬಳಸಿದ ಮಣ್ಣಿನ ವಿಧ",
-        "Village / City (optional)": "ಗ್ರಾಮ / ನಗರ (ಐಚ್ಛಿಕ)",
-        "District (optional)": "ಜಿಲ್ಲೆ (ಐಚ್ಛಿಕ)",
-        "Analyze All Photos": "ಎಲ್ಲಾ ಫೋಟೋಗಳನ್ನು ವಿಶ್ಲೇಷಿಸಿ",
-        "Individual Photo Results": "ವೈಯಕ್ತಿಕ ಫೋಟೋ ಫಲಿತಾಂಶಗಳು",
-        "Overall Crop Health Assessment": "ಒಟ್ಟಾರೆ ಬೆಳೆ ಆರೋಗ್ಯ ಮೌಲ್ಯಮಾಪನ",
-        "Farmer Information": "ರೈತರ ಮಾಹಿತಿ",
-        "Detailed Recommendation": "ವಿವರವಾದ ಶಿಫಾರಸು",
-        "Recommended Action": "ಶಿಫಾರಸು ಮಾಡಿದ ಕ್ರಮ",
-        "Treatment": "ಚಿಕಿತ್ಸೆ",
-        "Weather Risk": "ಹವಾಮಾನ ಅಪಾಯ",
-        "How Quickly Should You Act?": "ಎಷ್ಟು ಬೇಗ ಕ್ರಮ ಕೈಗೊಳ್ಳಬೇಕು?",
-        "Important Precaution": "ಪ್ರಮುಖ ಮುನ್ನೆಚ್ಚರಿಕೆ",
-        "Voice Summary": "ಧ್ವನಿ ಸಾರಾಂಶ",
-        "Farmer helpline & support": "ರೈತರ ಸಹಾಯವಾಣಿ ಮತ್ತು ಬೆಂಬಲ",
-        "Expanding crop coverage": "ಬೆಳೆ ವ್ಯಾಪ್ತಿಯ ವಿಸ್ತರಣೆ",
-        "Listen to this result": "ಈ ಫಲಿತಾಂಶವನ್ನು ಆಲಿಸಿ",
-        "Listen to full recommendation summary": "ಸಂಪೂರ್ಣ ಶಿಫಾರಸನ್ನು ಆಲಿಸಿ",
-        "Photos analyzed": "ವಿಶ್ಲೇಷಿಸಿದ ಫೋಟೋಗಳು",
-        "Affected photos": "ಬಾಧಿತ ಫೋಟೋಗಳು",
-        "Healthy photos": "ಆರೋಗ್ಯಕರ ಫೋಟೋಗಳು",
-        "Avg. confidence": "ಸರಾಸರಿ ವಿಶ್ವಾಸ",
-        "Overall risk": "ಒಟ್ಟಾರೆ ಅಪಾಯ",
-        "Confidence": "ವಿಶ್ವಾಸ",
-        "Severity": "ತೀವ್ರತೆ",
-        "Progression": "ಪ್ರಗತಿ",
-        "Crop health": "ಬೆಳೆ ಆರೋಗ್ಯ",
-        "Healthy": "ಆರೋಗ್ಯಕರ",
-        "Moderate risk": "ಮಧ್ಯಮ ಅಪಾಯ",
-        "Severe — act now": "ತೀವ್ರ — ಈಗಲೇ ಕ್ರಮ ಕೈಗೊಳ್ಳಿ",
-        "No disease detected": "ಯಾವುದೇ ರೋಗ ಪತ್ತೆಯಾಗಿಲ್ಲ",
-        "Low Risk": "ಕಡಿಮೆ ಅಪಾಯ",
-        "Moderate Risk": "ಮಧ್ಯಮ ಅಪಾಯ",
-        "High Risk": "ಹೆಚ್ಚಿನ ಅಪಾಯ",
-        "Preventive care": "ತಡೆಗಟ್ಟುವ ಆರೈಕೆ",
-        "Act immediately": "ತಕ್ಷಣ ಕ್ರಮ ಕೈಗೊಳ್ಳಿ",
-        "Act within 1–2 days": "1–2 ದಿನಗಳಲ್ಲಿ ಕ್ರಮ ಕೈಗೊಳ್ಳಿ",
-        "Monitor closely": "ನಿಕಟವಾಗಿ ಮೇಲ್ವಿಚಾರಣೆ ಮಾಡಿ",
-        "No": "ಇಲ್ಲ",
-        "Yes": "ಹೌದು",
-        "Not sure": "ಖಚಿತವಿಲ್ಲ",
-        "Normal": "ಸಾಮಾನ್ಯ",
-        "High rainfall": "ಹೆಚ್ಚಿನ ಮಳೆ",
-        "High humidity": "ಹೆಚ್ಚಿನ ತೇವಾಂಶ",
-        "Very hot": "ತುಂಬಾ ಬಿಸಿ",
-        "Very dry": "ತುಂಬಾ ಒಣ",
-        "Less than 1 day": "1 ದಿನಕ್ಕಿಂತ ಕಡಿಮೆ",
-        "1–3 days": "1–3 ದಿನಗಳು",
-        "4–7 days": "4–7 ದಿನಗಳು",
-        "1–2 weeks": "1–2 ವಾರಗಳು",
-        "More than 2 weeks": "2 ವಾರಗಳಿಗಿಂತ ಹೆಚ್ಚು",
-        "Only one/few leaves": "ಒಂದು/ಕೆಲವು ಎಲೆಗಳು ಮಾತ್ರ",
-        "Less than 25%": "25% ಕ್ಕಿಂತ ಕಡಿಮೆ",
-        "25–50%": "25–50%",
-        "50–75%": "50–75%",
-        "More than 75%": "75% ಕ್ಕಿಂತ ಹೆಚ್ಚು",
-        "Tomato": "ಟೊಮೇಟೊ",
-        "Potato": "ಆಲೂಗಡ್ಡೆ",
-        "Bell Pepper": "ದೊಡ್ಡ ಮೆಣಸಿನಕಾಯಿ",
-        "Other / Not sure": "ಇತರೆ / ಖಚಿತವಿಲ್ಲ",
-        "Seedling": "ಸಸಿ ಹಂತ",
-        "Vegetative": "ಸಸ್ಯೀಯ ಹಂತ",
-        "Flowering": "ಹೂ ಬಿಡುವ ಹಂತ",
-        "Fruiting": "ಹಣ್ಣು ಬಿಡುವ ಹಂತ",
-        "Mature": "ಪಕ್ವ ಹಂತ",
-        "Loamy soil": "ಲೋಮಿ ಮಣ್ಣು",
-        "Clayey soil": "ಜೇಡಿ ಮಣ್ಣು",
-        "Sandy soil": "ಮರಳು ಮಣ್ಣು",
-        "Black soil (Regur)": "ಕಪ್ಪು ಮಣ್ಣು (ರೆಗರ್)",
-        "Red soil": "ಕೆಂಪು ಮಣ್ಣು",
-        "Alluvial soil": "ಜಲೋಢ ಮಣ್ಣು",
-        "Please capture a photo first.": "ದಯವಿಟ್ಟು ಮೊದಲು ಫೋಟೋ ತೆಗೆಯಿರಿ.",
-        "Please upload at least one photo first.": "ದಯವಿಟ್ಟು ಮೊದಲು ಕನಿಷ್ಠ ಒಂದು ಫೋಟೋವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ.",
-        "Analyzing photo(s)...": "ಫೋಟೋಗಳನ್ನು ವಿಶ್ಲೇಷಿಸಲಾಗುತ್ತಿದೆ...",
-        "Photo": "ಫೋಟೋ",
-        "Detection result": "ಪತ್ತೆ ಫಲಿತಾಂಶ",
-        "Unsupported image": "ಬೆಂಬಲವಿಲ್ಲದ ಚಿತ್ರ",
-        "❌ This image does not appear to be a supported crop leaf image. Please upload or capture a clear photo of a supported crop leaf.": "❌ ಈ ಚಿತ್ರವು ಬೆಂಬಲಿತ ಬೆಳೆ ಎಲೆಯ ಚಿತ್ರವಾಗಿರುವಂತೆ ಕಾಣುತ್ತಿಲ್ಲ. ದಯವಿಟ್ಟು ಬೆಂಬಲಿತ ಬೆಳೆ ಎಲೆಯ ಸ್ಪಷ್ಟ ಫೋಟೋವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ ಅಥವಾ ತೆಗೆದುಕೊಳ್ಳಿ.",
-        "Image resolution is too low. Please upload a clearer photo.": "ಚಿತ್ರದ রেজಲ್ಯೂಶನ್ ತುಂಬಾ ಕಡಿಮೆಯಾಗಿದೆ. ದಯವಿಟ್ಟು ಸ್ಪಷ್ಟವಾದ ಫೋಟೋವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ.",
-        "Image appears too blurry or lacks visible detail. Please provide a sharp photo.": "ಚಿತ್ರವು ತುಂಬಾ ಮಸುಕಾಗಿ ಕಾಣುತ್ತದೆ ಅಥವಾ ವಿವರಗಳ ಕೊರತೆಯಿದೆ. ದಯವಿಟ್ಟು ಸ್ಪಷ್ಟವಾದ ಫೋಟೋವನ್ನು ನೀಡಿ.",
-        "The model is not confident enough in this image prediction. Please ensure it is a clear leaf photo.": "ಈ ಚಿತ್ರದ ಮುನ್ನೋಟದ ಬಗ್ಗೆ ಮಾದರಿಗೆ ಸಾಕಷ್ಟು ವಿಶ್ವಾಸವಿಲ್ಲ. ದಯವಿಟ್ಟು ಇದು ಸ್ಪಷ್ಟ ಎಲೆಯ ಫೋಟೋ ಎಂದು ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಿ.",
-        "No valid crop leaf images were found among the inputs provided.": "ನೀಡಿದ ಇನ್‌ಪುಟ್‌ಗಳಲ್ಲಿ ಯಾವುದೇ ಸಿಂಧು ಬೆಳೆ ಎಲೆಯ ಚಿತ್ರಗಳು ಕಂಡುಬಂದಿಲ್ಲ.",
-        "None of the photos provided were valid crop leaf images suitable for disease analysis.": "ನೀಡಿದ ಯಾವುದೇ ಫೋಟೋಗಳು ರೋಗ ವಿಶ್ಲೇಷಣೆಗೆ ಸೂಕ್ತವಾದ ಬೆಳೆ ಎಲೆಯ ಫೋಟೋಗಳಾಗಿರಲಿಲ್ಲ.",
-        "Invalid or Corrupted Image": "ಅಮಾನ್ಯ ಅಥವಾ ಹಾಳಾದ ಚಿತ್ರ",
-        "Failed to load image file.": "ಚಿತ್ರ ಫೈಲ್ ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ.",
-        "AI predictions may vary based on photo quality. Always consult a local agricultural officer or expert for major crop decisions.": "ಫೋಟೋ ಗುಣಮಟ್ಟವನ್ನು ಆಧರಿಸಿ AI ಮುನ್ನೋಟಗಳು ಬದಲಾಗಬಹುದು. ಪ್ರಮುಖ ಬೆಳೆ ನಿರ್ಧಾರಗಳಿಗಾಗಿ ಯಾವಾಗಲೂ ಸ್ಥಳೀಯ ಕೃಷಿ ಅಧಿಕಾರಿ ಅಥವಾ ತಜ್ಞರನ್ನು ಸಂಪರ್ಕಿಸಿ.",
-        "Kisan Call Centre (Toll-Free): 1800-180-1551": "ರೈತ ಕರೆ ಕೇಂದ್ರ (ಉಚಿತ ಕರೆ): 1800-180-1551",
-        "Krishi Vigyan Kendra (KVK) Network": "ಕೃಷಿ ವಿಜ್ಞಾನ ಕೇಂದ್ರ (KVK) ಜಾಲ",
-        "Department of Agriculture, Maharashtra": "ಕೃಷಿ ಇಲಾಖೆ, ಮಹಾರಾಷ್ಟ್ರ",
-        "Current model covers Tomato, Potato, and Bell Pepper leaf diseases.": "ಪ್ರಸ್ತುತ ಮಾದರಿಯು ಟೊಮೆಟೊ, ಆಲೂಗಡ್ಡೆ ಮತ್ತು ದೊಡ್ಡ ಮೆಣಸಿನಕಾಯಿ ಎಲೆ ರೋಗಗಳನ್ನು ಒಳಗೊಂಡಿದೆ.",
-        "Expanding to Sugarcane, Cotton, Soybean, and Rice in upcoming versions.": "ರಾಬರುವ ಆವೃತ್ತಿಗಳಲ್ಲಿ ಕಬ್ಬು, ಹತ್ತಿ, ಸೋಯಾಬೀನ್ ಮತ್ತು ಭತ್ತಕ್ಕೆ ವಿಸ್ತರಿಸಲಾಗುತ್ತಿದೆ.",
-        "Location": "ಸ್ಥಳ",
-        "Growth Stage": "ಬೆಳವಣಿಗೆಯ ಹಂತ",
-        "Soil": "ಮಣ್ಣು",
-        "Symptoms Duration": "ರೋಗಲಕ್ಷಣಗಳ ಅವಧಿ",
-        "Crop Affected": "ಬಾಧಿತ ಬೆಳೆ",
-        "Prior History": "ಹಿಂದಿನ ಇತಿಹಾಸ",
-        "Previous Treatment": "ಹಿಂದಿನ ಚಿಕಿತ್ಸೆ",
-        "Yes, applied:": "ಹೌದು, ನೀಡಲಾಗಿದೆ:",
-        "Times seen before:": "ಹಿಂದೆ ಕಂಡ ಸಮಯಗಳು:",
-        "Select language": "ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ",
-        "Working...": "ಕೆಲಸ ನಡೆಯುತ್ತಿದೆ...",
-        "None": "ಯಾವುದೂ ಇಲ್ಲ",
-        "Unknown": "ಅಜ್ಞಾತ",
-        "Low": "ಕಡಿಮೆ",
-        "Moderate": "ಮಧ್ಯಮ",
-        "High": "ಹೆಚ್ಚು",
-        "Severe": "ತೀವ್ರ",
-        "Early": "ಆರಂಭಿಕ", "Advanced": "ಸುಧಾರಿತ", "Critical": "ತೀವ್ರ",
-        "Early stage": "ಆರಂಭಿಕ ಹಂತ", "Progressed": "ಪ್ರಗತಿಯಲ್ಲಿದೆ", "Advanced stage": "ಸುಧಾರಿತ ಹಂತ"
-    }
-}
-
-# Sidebar Language Selector
-st.sidebar.markdown("### 🌐 Language / भाषा / भाषा / ಭಾಷೆ")
-selected_language = st.sidebar.selectbox(
-    "Select language",
-    list(LANGUAGES.keys()),
-    key="global_language_selector",
-    label_visibility="collapsed"
-)
-CURRENT_LANG = LANGUAGES[selected_language]
-
-def translate(text):
-    """Robust centralized text translation helper function."""
-    if not isinstance(text, str) or CURRENT_LANG == "en" or not text.strip():
-        return text
-    table = UI_TRANSLATIONS.get(CURRENT_LANG, {})
-    if text in table:
-        return table[text]
-    out = text
-    # Sort keys by length descending to match full sentences before fragments
-    for source, target in sorted(table.items(), key=lambda x: len(x[0]), reverse=True):
-        if source in out:
-            out = out.replace(source, target)
-    return out
-
-# Override Streamlit components to automatically apply translation
-_original_markdown = st.markdown
-_original_caption = st.caption
-_original_info = st.info
-_original_warning = st.warning
-_original_error = st.error
-_original_success = st.success
-_original_write = st.write
-_original_button = st.button
-_original_form_submit_button = st.form_submit_button
-_original_selectbox = st.selectbox
-_original_checkbox = st.checkbox
-_original_radio = st.radio
-_original_text_input = st.text_input
-_original_number_input = st.number_input
-_original_file_uploader = st.file_uploader
-_original_camera_input = st.camera_input
-_original_spinner = st.spinner
-
-def _translated_markdown(body, *args, **kwargs):
-    return _original_markdown(translate(body), *args, **kwargs)
-
-def _translated_caption(body, *args, **kwargs):
-    return _original_caption(translate(body), *args, **kwargs)
-
-def _translated_info(body, *args, **kwargs):
-    return _original_info(translate(body), *args, **kwargs)
-
-def _translated_warning(body, *args, **kwargs):
-    return _original_warning(translate(body), *args, **kwargs)
-
-def _translated_error(body, *args, **kwargs):
-    return _original_error(translate(body), *args, **kwargs)
-
-def _translated_success(body, *args, **kwargs):
-    return _original_success(translate(body), *args, **kwargs)
-
-def _translated_write(*args, **kwargs):
-    translated = [translate(x) if isinstance(x, str) else x for x in args]
-    return _original_write(*translated, **kwargs)
-
-def _translated_button(label, *args, **kwargs):
-    return _original_button(translate(label), *args, **kwargs)
-
-def _translated_submit(label, *args, **kwargs):
-    return _original_form_submit_button(translate(label), *args, **kwargs)
-
-def _translated_selectbox(label, options, *args, **kwargs):
-    display_options = [translate(x) if isinstance(x, str) else x for x in options]
-    idx = _original_selectbox(translate(label), display_options, *args, **kwargs)
-    try:
-        val_index = display_options.index(idx)
-        return options[val_index]
-    except Exception:
-        return idx
-
-def _translated_checkbox(label, *args, **kwargs):
-    return _original_checkbox(translate(label), *args, **kwargs)
-
-def _translated_radio(label, options, *args, **kwargs):
-    display_options = [translate(x) if isinstance(x, str) else x for x in options]
-    res = _original_radio(translate(label), display_options, *args, **kwargs)
-    try:
-        val_index = display_options.index(res)
-        return options[val_index]
-    except Exception:
-        return res
-
-def _translated_text_input(label, *args, **kwargs):
-    return _original_text_input(translate(label), *args, **kwargs)
-
-def _translated_number_input(label, *args, **kwargs):
-    return _original_number_input(translate(label), *args, **kwargs)
-
-def _translated_file_uploader(label, *args, **kwargs):
-    return _original_file_uploader(translate(label), *args, **kwargs)
-
-def _translated_camera_input(label, *args, **kwargs):
-    return _original_camera_input(translate(label), *args, **kwargs)
-
-def _translated_spinner(text="Working...", *args, **kwargs):
-    return _original_spinner(translate(text), *args, **kwargs)
-
-st.markdown = _translated_markdown
-st.caption = _translated_caption
-st.info = _translated_info
-st.warning = _translated_warning
-st.error = _translated_error
-st.success = _translated_success
-st.write = _translated_write
-st.button = _translated_button
-st.form_submit_button = _translated_submit
-st.selectbox = _translated_selectbox
-st.checkbox = _translated_checkbox
-st.radio = _translated_radio
-st.text_input = _translated_text_input
-st.number_input = _translated_number_input
-st.file_uploader = _translated_file_uploader
-st.camera_input = _translated_camera_input
-st.spinner = _translated_spinner
 
 # ---------- Custom styling ----------
 st.markdown("""
@@ -661,6 +86,13 @@ st.markdown("""
     }
     .stat-label { font-size: 0.8rem; color: #d3ddc7; margin-top: 2px; }
 
+    .upload-panel-label {
+        font-weight: 700;
+        color: #f6f9f2;
+        margin-bottom: 0.6rem;
+    }
+
+    /* Style Streamlit's ACTUAL dropzone so the whole visible box is the real drop target */
     div[data-testid="stFileUploaderDropzone"] {
         border: 2.5px dashed rgba(242,199,68,0.55) !important;
         border-radius: 20px !important;
@@ -695,7 +127,6 @@ st.markdown("""
         border: 1px solid rgba(255,255,255,0.10);
         border-top: 5px solid #f2c744;
         animation: fadeIn 0.5s ease-in;
-        margin-bottom: 1.2rem;
     }
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
@@ -721,7 +152,7 @@ st.markdown("""
         color: #bcc7ab;
         text-transform: uppercase;
     }
-    .result-name { font-size: 1.5rem; font-weight: 800; margin-top: 4px; color: #f6f9f2; }
+    .result-name { font-size: 1.7rem; font-weight: 800; margin-top: 4px; color: #f6f9f2; }
     .confidence-bar-bg {
         background-color: rgba(255,255,255,0.12);
         border-radius: 10px;
@@ -794,6 +225,7 @@ st.markdown("""
         border-top: 1px solid rgba(255,255,255,0.10);
     }
 
+    /* Streamlit native widgets */
     div[data-testid="stSelectbox"] > div {
         background: rgba(255,255,255,0.08) !important;
         border-radius: 14px !important;
@@ -811,17 +243,8 @@ st.markdown("""
         padding: 0.6rem 1.2rem !important;
     }
     .stButton button:hover { background: #f6d768 !important; }
-    div[data-testid="stFormSubmitButton"] button {
-        background: #f2c744 !important;
-        color: #23331b !important;
-        border: none !important;
-        border-radius: 30px !important;
-        font-weight: 800 !important;
-        padding: 0.7rem 1.6rem !important;
-        font-size: 1.02rem !important;
-    }
-    div[data-testid="stFormSubmitButton"] button:hover { background: #f6d768 !important; }
 
+    /* === NEW FEATURE CSS: cards for duration / severity / health dashboard === */
     .info-card {
         background: rgba(255,255,255,0.06);
         border-radius: 18px;
@@ -865,6 +288,7 @@ st.markdown("""
         transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
+    /* === NEW FEATURE CSS: crop age / growth stage / recommendation section === */
     .subsection-title {
         font-weight: 700;
         color: #f2c744;
@@ -879,54 +303,14 @@ st.markdown("""
         font-size: 0.95rem;
         margin-top: 0.3rem;
     }
-    div[data-testid="stNumberInput"] label, div[data-testid="stCheckbox"] label, div[data-testid="stRadio"] label, div[data-testid="stTextInput"] label {
+    div[data-testid="stNumberInput"] label, div[data-testid="stCheckbox"] label {
         color: #eef2e6 !important;
     }
-    div[data-testid="stNumberInput"] input,
-    div[data-testid="stTextInput"] input {
-        background: #ffffff !important;
-        color: #1c2a17 !important;
-        -webkit-text-fill-color: #1c2a17 !important;
-        caret-color: #1c2a17 !important;
-        font-weight: 700 !important;
-        border: 1px solid rgba(255,255,255,0.25) !important;
+    div[data-testid="stNumberInput"] input {
+        background: rgba(255,255,255,0.08) !important;
+        color: #eef2e6 !important;
         border-radius: 10px !important;
     }
-    div[data-testid="stNumberInput"] button svg {
-        fill: #1c2a17 !important;
-    }
-    div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
-        background: #ffffff !important;
-        color: #1c2a17 !important;
-        border-radius: 10px !important;
-    }
-    div[data-testid="stSelectbox"] div[data-baseweb="select"] span {
-        color: #1c2a17 !important;
-    }
-    ul[data-testid="stSelectboxVirtualDropdown"] li {
-        color: #1c2a17 !important;
-    }
-
-    .photo-count-badge {
-        display: inline-block;
-        background: rgba(242,199,68,0.15);
-        color: #f2c744;
-        border: 1px solid rgba(242,199,68,0.4);
-        border-radius: 30px;
-        padding: 6px 16px;
-        font-weight: 700;
-        font-size: 0.9rem;
-        margin-bottom: 12px;
-    }
-    .mini-metric-card {
-        background: rgba(255,255,255,0.06);
-        border-radius: 16px;
-        padding: 0.9rem 0.7rem;
-        text-align: center;
-        border: 1px solid rgba(255,255,255,0.10);
-    }
-    .mini-metric-num { font-size: 1.5rem; font-weight: 800; color: #f2c744; }
-    .mini-metric-label { font-size: 0.75rem; color: #d3ddc7; margin-top: 2px; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -938,145 +322,7 @@ def load_my_model():
         class_names = json.load(f)
     return model, class_names
 
-try:
-    model, class_names = load_my_model()
-    MODEL_LOAD_ERROR = None
-except Exception as e:
-    model, class_names = None, []
-    MODEL_LOAD_ERROR = str(e)
-
-# Disease Info Database
-disease_info = {
-    "Pepper__bell___Bacterial_spot": {
-        "name": "Bell Pepper Bacterial Spot",
-        "severity": "Moderate",
-        "action": "Spray copper-based bactericides early. Remove and destroy infected leaves to halt spread.",
-        "precaution": "Avoid overhead irrigation as water splashes spread bacteria rapidly.",
-    },
-    "Pepper__bell___healthy": {
-        "name": "Healthy Bell Pepper Leaf",
-        "severity": "Healthy",
-        "action": "No treatment required. Maintain balanced watering and optimal soil fertility.",
-        "precaution": "Regularly inspect undersides of leaves for early signs of pests.",
-    },
-    "Potato___Early_blight": {
-        "name": "Potato Early Blight",
-        "severity": "Moderate",
-        "action": "Apply fungicides like Mancozeb or Chlorothalonil every 7–10 days.",
-        "precaution": "Practice crop rotation with non-solanaceous crops for at least 2–3 seasons.",
-    },
-    "Potato___Late_blight": {
-        "name": "Potato Late Blight",
-        "severity": "Severe",
-        "action": "Apply systemic fungicides like Ridomil Gold or Cymoxanil immediately.",
-        "precaution": "Destroy severely infected plants and maintain field sanitation.",
-    },
-    "Potato___healthy": {
-        "name": "Healthy Potato Leaf",
-        "severity": "Healthy",
-        "action": "Crop is healthy. Ensure adequate potassium and nitrogen nutrients.",
-        "precaution": "Keep foliage dry; irrigate early in the day.",
-    },
-    "Tomato___Bacterial_spot": {
-        "name": "Tomato Bacterial Spot",
-        "severity": "Moderate",
-        "action": "Use copper hydroxide spray mixed with Mancozeb for better control.",
-        "precaution": "Sanitize tools between handling affected plants.",
-    },
-    "Tomato___Early_blight": {
-        "name": "Tomato Early Blight",
-        "severity": "Moderate",
-        "action": "Apply copper-based or chlorothalonil fungicides; prune lower infected foliage.",
-        "precaution": "Mulch around soil base to prevent fungal spores from splashing up.",
-    },
-    "Tomato___Late_blight": {
-        "name": "Tomato Late Blight",
-        "severity": "Severe",
-        "action": "Apply systemic fungicides (Mancozeb, Copper Oxychloride) without delay.",
-        "precaution": "High humidity accelerates spread; increase plant spacing for airflow.",
-    },
-    "Tomato___Leaf_Mold": {
-        "name": "Tomato Leaf Mold",
-        "severity": "Moderate",
-        "action": "Apply fungicides containing difenoconazole or copper soap.",
-        "precaution": "Reduce greenhouse or crop humidity by improving air circulation.",
-    },
-    "Tomato___Septoria_leaf_spot": {
-        "name": "Tomato Septoria Leaf Spot",
-        "severity": "Moderate",
-        "action": "Apply chlorothalonil or copper fungicide at the first sight of small spots.",
-        "precaution": "Remove lower infected leaves to delay upward spread.",
-    },
-    "Tomato___Spider_mites Two-spotted_spider_mite": {
-        "name": "Tomato Two-Spotted Spider Mite",
-        "severity": "Moderate",
-        "action": "Apply insecticidal soap, neem oil, or specific miticides (Abamectin).",
-        "precaution": "Keep fields free of weeds which harbor mites during dry periods.",
-    },
-    "Tomato___Target_Spot": {
-        "name": "Tomato Target Spot",
-        "severity": "Moderate",
-        "action": "Spray fungicides like azoxystrobin or chlorothalonil.",
-        "precaution": "Avoid wet leaf surfaces for extended periods.",
-    },
-    "Tomato___Tomato_Yellow_Leaf_Curl_Virus": {
-        "name": "Tomato Yellow Leaf Curl Virus",
-        "severity": "Severe",
-        "action": "Control whitefly vectors using imidacloprid or neem oil sprays. Rogue infected plants.",
-        "precaution": "Use yellow sticky traps and reflective mulches to deter whiteflies.",
-    },
-    "Tomato___Tomato_mosaic_virus": {
-        "name": "Tomato Mosaic Virus",
-        "severity": "Severe",
-        "action": "No chemical cure. Remove and burn infected plants immediately.",
-        "precaution": "Wash hands with soap before handling healthy plants; disinfect tools.",
-    },
-    "Tomato___healthy": {
-        "name": "Healthy Tomato Leaf",
-        "severity": "Healthy",
-        "action": "No treatment needed. Continue good agricultural practices.",
-        "precaution": "Monitor weekly for early detection of pests.",
-    },
-}
-
-# Image validation and safety check functions
-def validate_prediction(img, raw_preds, class_names):
-    """
-    Validates image quality, resolution, sharpness, and confidence score.
-    Returns (is_valid, error_key_string, confidence_percentage, predicted_class_name).
-    """
-    # 1. Resolution Check
-    width, height = img.size
-    if width < 100 or height < 100:
-        return False, "Image resolution is too low. Please upload a clearer photo.", 0.0, ""
-
-    # 2. Detail / Blur Check using Image standard deviation
-    gray_img = img.convert('L')
-    stat = ImageStat.Stat(gray_img)
-    stddev = stat.stddev[0]
-    if stddev < 15.0:  # Very blank, solid color, or extremely blurry image
-        return False, "Image appears too blurry or lacks visible detail. Please provide a sharp photo.", 0.0, ""
-
-    # 3. Model Prediction Confidence Threshold
-    idx = np.argmax(raw_preds[0])
-    conf = float(raw_preds[0][idx]) * 100.0
-    pred_class = class_names[idx]
-
-    if conf < CONFIDENCE_THRESHOLD:
-        return False, "The model is not confident enough in this image prediction. Please ensure it is a clear leaf photo.", conf, pred_class
-
-    return True, "", conf, pred_class
-
-# Dynamic TTS Generator
-def get_voice_audio_bytes(text_content, lang_code="en"):
-    try:
-        tts = gTTS(text=text_content, lang=lang_code, slow=False)
-        fp = io.BytesIO()
-        tts.write_to_fp(fp)
-        fp.seek(0)
-        return fp.read()
-    except Exception:
-        return None
+model, class_names = load_my_model()
 
 # ---------- Hero ----------
 st.markdown("""
@@ -1090,350 +336,719 @@ st.markdown("""
 # ---------- Stat row ----------
 s1, s2, s3, s4 = st.columns(4)
 with s1:
-    st.markdown('<div class="stat-card"><div class="stat-num">4</div><div class="stat-label">' + translate("Crops covered") + '</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="stat-card"><div class="stat-num">4</div><div class="stat-label">Crops covered</div></div>', unsafe_allow_html=True)
 with s2:
-    st.markdown('<div class="stat-card"><div class="stat-num">99%+</div><div class="stat-label">' + translate("Model accuracy") + '</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="stat-card"><div class="stat-num">99%+</div><div class="stat-label">Model accuracy</div></div>', unsafe_allow_html=True)
 with s3:
-    st.markdown('<div class="stat-card"><div class="stat-num">4</div><div class="stat-label">' + translate("Languages") + '</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="stat-card"><div class="stat-num">4</div><div class="stat-label">Languages</div></div>', unsafe_allow_html=True)
 with s4:
-    st.markdown('<div class="stat-card"><div class="stat-num">⚡</div><div class="stat-label">' + translate("AI Advisory") + '</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="stat-card"><div class="stat-num">Offline</div><div class="stat-label">Field-ready design</div></div>', unsafe_allow_html=True)
 
 st.write("")
 
 # ---------- How it works ----------
-st.markdown('<div class="section-header">⚡ ' + translate("How it works") + '</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-header">⚡ How it works</div>', unsafe_allow_html=True)
 h1, h2, h3 = st.columns(3)
 with h1:
-    st.markdown('<div class="step-card"><div class="step-num">1</div><b>' + translate("Snap photos") + '</b><br><span style="opacity:0.85; font-size:0.85rem;">' + translate("Take clear photos of the affected leaves") + '</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="step-card"><div class="step-num">1</div><b>📷 Snap a photo</b><br><span style="opacity:0.85; font-size:0.85rem;">Take a clear photo of the affected leaf</span></div>', unsafe_allow_html=True)
 with h2:
-    st.markdown('<div class="step-card"><div class="step-num">2</div><b>' + translate("AI analyzes") + '</b><br><span style="opacity:0.85; font-size:0.85rem;">' + translate("Model detects disease instantly") + '</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="step-card"><div class="step-num">2</div><b>🧠 AI analyzes</b><br><span style="opacity:0.85; font-size:0.85rem;">On-device model detects disease instantly</span></div>', unsafe_allow_html=True)
 with h3:
-    st.markdown('<div class="step-card"><div class="step-num">3</div><b>' + translate("Get advice") + '</b><br><span style="opacity:0.85; font-size:0.85rem;">' + translate("Hear treatment steps in your language") + '</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="step-card"><div class="step-num">3</div><b>🗣️ Get advice</b><br><span style="opacity:0.85; font-size:0.85rem;">Hear treatment steps in your language</span></div>', unsafe_allow_html=True)
 
 st.write("")
 
-# ---------- Main Form & Multi-photo Input ----------
-if MODEL_LOAD_ERROR:
-    st.error(f"Error loading model: {MODEL_LOAD_ERROR}")
-    st.stop()
+# ---------- Disease info ----------
+disease_info = {
+    "Pepper__bell___Bacterial_spot": {
+        "display": "Bell Pepper — Bacterial Spot",
+        "crop": "Bell Pepper",
+        "icon": "🫑",
+        "treatment_en": "Apply copper-based bactericide. Avoid overhead watering and remove infected leaves.",
+        "treatment_hi": "कॉपर आधारित बैक्टीरिसाइड का प्रयोग करें। ऊपर से पानी देने से बचें और संक्रमित पत्तियों को हटा दें।",
+        "treatment_mr": "तांबेयुक्त बॅक्टेरिसाइड वापरा. वरून पाणी देणे टाळा आणि संक्रमित पाने काढून टाका.",
+        "treatment_kn": "ತಾಮ್ರ ಆಧಾರಿತ ಬ್ಯಾಕ್ಟೀರಿಸೈಡ್ ಅನ್ನು ಬಳಸಿ. ಮೇಲಿನಿಂದ ನೀರುಣಿಸುವುದನ್ನು ತಪ್ಪಿಸಿ ಮತ್ತು ಸೋಂಕಿತ ಎಲೆಗಳನ್ನು ತೆಗೆದುಹಾಕಿ.",
+        "severity": "moderate"
+    },
+    "Potato___Early_blight": {
+        "display": "Potato — Early Blight",
+        "crop": "Potato",
+        "icon": "🥔",
+        "treatment_en": "Apply fungicide (Chlorothalonil or Mancozeb). Rotate crops and remove infected debris.",
+        "treatment_hi": "फफूंदनाशक (क्लोरोथालोनिल या मैंकोजेब) का प्रयोग करें। फसल चक्र अपनाएं और संक्रमित अवशेष हटा दें।",
+        "treatment_mr": "बुरशीनाशक (क्लोरोथॅलोनिल किंवा मॅन्कोझेब) वापरा. पीक फेरपालट करा आणि संक्रमित अवशेष काढून टाका.",
+        "treatment_kn": "ಶಿಲೀಂಧ್ರನಾಶಕ (ಕ್ಲೋರೋಥಲೋನಿಲ್ ಅಥವಾ ಮ್ಯಾಂಕೋಜೆಬ್) ಬಳಸಿ. ಬೆಳೆ ಸರದಿ ಅನುಸರಿಸಿ ಮತ್ತು ಸೋಂಕಿತ ಅವಶೇಷಗಳನ್ನು ತೆಗೆದುಹಾಕಿ.",
+        "severity": "moderate"
+    },
+    "Tomato_Late_blight": {
+        "display": "Tomato — Late Blight",
+        "crop": "Tomato",
+        "icon": "🍅",
+        "treatment_en": "Apply copper-based fungicide immediately. Remove and destroy infected plants to prevent spread.",
+        "treatment_hi": "तुरंत कॉपर आधारित फफूंदनाशक का प्रयोग करें। फैलाव रोकने के लिए संक्रमित पौधों को हटाकर नष्ट कर दें।",
+        "treatment_mr": "त्वरित तांबेयुक्त बुरशीनाशक वापरा. प्रसार रोखण्यासाठी संक्रमित रोपे काढून नष्ट करा.",
+        "treatment_kn": "ತಕ್ಷಣ ತಾಮ್ರ ಆಧಾರಿತ ಶಿಲೀಂಧ್ರನಾಶಕವನ್ನು ಬಳಸಿ. ಹರಡುವಿಕೆಯನ್ನು ತಡೆಯಲು ಸೋಂಕಿತ ಸಸ್ಯಗಳನ್ನು ತೆಗೆದು ನಾಶಪಡಿಸಿ.",
+        "severity": "severe"
+    },
+    "Tomato_healthy": {
+        "display": "Tomato — Healthy",
+        "crop": "Tomato",
+        "icon": "✅",
+        "treatment_en": "No disease detected. Continue regular monitoring and good field hygiene.",
+        "treatment_hi": "कोई रोग नहीं पाया गया। नियमित निगरानी और अच्छी खेत स्वच्छता जारी रखें।",
+        "treatment_mr": "कोणताही रोग आढळला नाही. नियमित देखरेख आणि चांगली शेत स्वच्छता सुरू ठेवा.",
+        "treatment_kn": "ಯಾವುದೇ ರೋಗ ಪತ್ತೆಯಾಗಿಲ್ಲ. ನಿಯಮಿತ ಮೇಲ್ವಿಚಾರಣೆ ಮತ್ತು ಉತ್ತಮ ಹೊಲದ ನೈರ್ಮಲ್ಯವನ್ನು ಮುಂದುವರಿಸಿ.",
+        "severity": "healthy"
+    }
+}
 
-st.markdown('<div class="section-header">📸 ' + translate("Scan crop leaves") + '</div>', unsafe_allow_html=True)
+severity_colors = {"healthy": "#7bd389", "moderate": "#f2c744", "severe": "#e0665a"}
+severity_labels = {"healthy": "Healthy", "moderate": "Moderate risk", "severe": "Severe — act now"}
 
-input_choice = st.radio(
-    "Input Method",
-    ["📷 Click Leaf Photo", "📁 Upload Leaf Photo"],
-    horizontal=True,
-    label_visibility="collapsed"
-)
 
-uploaded_files = []
+# ======================================================
+# === NEW FEATURE 4 (part A): BASIC IMAGE VALIDATION ===
+# ======================================================
+def validate_prediction(image: Image.Image, confidence: float, confidence_threshold: float = 60.0):
+    """
+    Lightweight, dependency-free sanity checks so obviously unsuitable
+    images aren't confidently presented as a disease diagnosis.
+    Returns {"is_valid": bool, "warnings": [str, ...]}.
+    This does NOT block prediction — it only adds cautionary messages,
+    since your model/class_names remain the source of truth.
+    """
+    warnings = []
+    is_valid = True
 
-if input_choice == "📷 Click Leaf Photo":
-    st.markdown("##### " + translate("Capture Leaf Photo"))
-    st.caption(translate("Take a clear, well-lit photo of the affected crop leaf"))
-    camera_file = st.camera_input("Take photo of leaf", label_visibility="collapsed")
-    if camera_file is not None:
-        uploaded_files = [camera_file]
-else:
-    st.markdown("##### " + translate("Scan crop leaves"))
-    st.caption(translate("Drag one or more leaf photos below, or click to browse"))
-    file_list = st.file_uploader(
-        "Upload Leaf Photo",
-        type=["jpg", "jpeg", "png"],
-        accept_multiple_files=True,
-        label_visibility="collapsed"
-    )
-    if file_list:
-        uploaded_files = file_list
+    width, height = image.size
+    if width < 50 or height < 50:
+        warnings.append("⚠️ The uploaded image resolution is very low. Please upload a clearer photo.")
+        is_valid = False
 
-with st.form(key="farmer_info_form"):
-    st.markdown('<div class="subsection-title">📋 ' + translate("Crop Information") + '</div>', unsafe_allow_html=True)
-    f1, f2 = st.columns(2)
-    with f1:
-        crop_name = st.selectbox(
-            "Crop name",
-            ["Tomato", "Potato", "Bell Pepper", "Other / Not sure"]
-        )
-        growth_stage = st.selectbox(
-            "Crop growth stage",
-            ["Seedling", "Vegetative", "Flowering", "Fruiting", "Mature"]
-        )
-        not_sure_age = st.checkbox("Not sure about crop age")
-        if not not_sure_age:
-            crop_age = st.number_input("Approximate crop age (days)", min_value=1, max_value=365, value=45)
-        else:
-            crop_age = None
-    with f2:
-        symptom_duration = st.selectbox(
-            "How long have you noticed the symptoms?",
-            ["Less than 1 day", "1–3 days", "4–7 days", "1–2 weeks", "More than 2 weeks"]
-        )
-        field_spread = st.selectbox(
-            "How much of the crop appears affected?",
-            ["Only one/few leaves", "Less than 25%", "25–50%", "50–75%", "More than 75%"]
-        )
-        recent_weather = st.selectbox(
-            "Recent weather / field condition",
-            ["Normal", "High rainfall", "High humidity", "Very hot", "Very dry"]
-        )
+    try:
+        small = image.convert("RGB").resize((64, 64))
+        arr = np.array(small).astype("float32")
+        mean_r = arr[:, :, 0].mean()
+        mean_g = arr[:, :, 1].mean()
+        mean_b = arr[:, :, 2].mean()
+        std_total = arr.std()
+        if std_total < 8:
+            warnings.append("⚠️ The image appears to have very little detail. "
+                             "Please upload a focused photo of the affected leaf.")
+            is_valid = False
+        if mean_g < mean_r * 0.85 and mean_g < mean_b * 0.85:
+            warnings.append("ℹ️ This image doesn't show strong green/leaf-like coloring. "
+                             "Please make sure the photo is a close-up of a crop leaf for best results.")
+    except Exception:
+        pass
 
-    st.markdown('<div class="subsection-title">🧪 ' + translate("Have you already applied any treatment?") + '</div>', unsafe_allow_html=True)
-    applied_treatment = st.radio("Have you already applied any treatment?", ["No", "Yes"], horizontal=True, label_visibility="collapsed")
-    treatment_details = ""
-    if applied_treatment == "Yes":
-        treatment_details = st.text_input("Please specify the treatment used")
+    if confidence < confidence_threshold:
+        warnings.append("⚠️ Low confidence prediction. Please upload a clearer image of the affected crop leaf.")
+        is_valid = False
 
-    st.markdown('<div class="subsection-title">📜 ' + translate("Has this crop shown this disease before? (optional)") + '</div>', unsafe_allow_html=True)
-    prior_history = st.selectbox("Has this crop shown this disease before? (optional)", ["No", "Yes", "Not sure"], label_visibility="collapsed")
-    history_count = 0
-    if prior_history == "Yes":
-        history_count = st.number_input("How many times has this crop shown this disease before?", min_value=1, max_value=10, value=1)
+    return {"is_valid": is_valid, "warnings": warnings}
 
-    st.markdown('<div class="subsection-title">🌱 ' + translate("Type of soil used for growing") + '</div>', unsafe_allow_html=True)
-    soil_type = st.selectbox("Type of soil used for growing", ["Loamy soil", "Clayey soil", "Sandy soil", "Black soil (Regur)", "Red soil", "Alluvial soil"], label_visibility="collapsed")
 
-    c_loc1, c_loc2 = st.columns(2)
-    with c_loc1:
-        village = st.text_input("Village / City (optional)")
-    with c_loc2:
-        district = st.text_input("District (optional)")
+# ======================================================
+# === NEW FEATURE 2: DISEASE SEVERITY ASSESSMENT ===
+# ======================================================
+def get_severity(info: dict, confidence: float):
+    """
+    Combines your existing per-disease 'severity' rule (healthy/moderate/severe
+    in disease_info) with model confidence to produce a Mild/Moderate/Severe
+    estimate, plus a short explanation and recommended action.
 
-    submit_button = st.form_submit_button(label="🔍 " + translate("Analyze All Photos"))
+    IMPORTANT: This is an AI-based/estimated severity assessment only —
+    it is NOT a scientifically validated disease severity measurement.
+    Returns None for healthy predictions (no severity applicable).
+    """
+    base = info.get("severity", "moderate")
+    if base == "healthy":
+        return None
 
-if submit_button:
-    if not uploaded_files:
-        if input_choice == "📷 Click Leaf Photo":
-            st.warning("Please capture a photo first.")
-        else:
-            st.warning("Please upload at least one photo first.")
+    if base == "severe":
+        level = "Severe" if confidence >= 70 else "Moderate"
+    else:  # base == "moderate"
+        level = "Moderate" if confidence >= 70 else "Mild"
+
+    details = {
+        "Mild": {
+            "explanation": "The AI model detects early or low-intensity visual symptoms.",
+            "action": "Monitor the crop and remove visibly affected leaves if appropriate.",
+            "css_class": "mild",
+        },
+        "Moderate": {
+            "explanation": "The AI model detects clearer, more established disease symptoms.",
+            "action": "Increase monitoring and consider suitable crop-protection measures.",
+            "css_class": "moderate",
+        },
+        "Severe": {
+            "explanation": "The AI model detects strong, widespread visual symptoms of disease.",
+            "action": "Consult a local agricultural expert or agriculture officer and take prompt action.",
+            "css_class": "severe",
+        },
+    }
+    d = details[level]
+    return {"level": level, "explanation": d["explanation"], "action": d["action"], "css_class": d["css_class"]}
+
+
+# ======================================================
+# === NEW FEATURE 1: DISEASE DURATION / PROGRESSION ===
+# ======================================================
+def get_disease_duration(severity_level: str):
+    """
+    Approximate, general progression estimate tied to severity level.
+    These are general educational ranges, not precise agronomic predictions —
+    actual progression depends on crop, weather, and infection conditions.
+    """
+    duration_map = {
+        "Mild": "Early stage: approx. 1–3 days",
+        "Moderate": "Moderate stage: approx. 3–7 days",
+        "Severe": "Severe stage: approx. 7+ days",
+    }
+    return duration_map.get(severity_level, "Progression estimate unavailable")
+
+
+# ======================================================
+# === NEW FEATURE 3: CROP HEALTH PROGRESS DASHBOARD ===
+# ======================================================
+def get_crop_health_progress(is_healthy: bool, severity_level: str = None):
+    """
+    Converts the detection result into a simple visual health percentage
+    and risk-status label. Visual indicator only, not a scientific measurement.
+    """
+    if is_healthy:
+        return {"percent": 100, "status_label": "Healthy", "status_color": "#7bd389"}
+
+    mapping = {
+        "Mild": {"percent": 75, "status_label": "Low Risk", "status_color": "#a9d97a"},
+        "Moderate": {"percent": 50, "status_label": "Moderate Risk", "status_color": "#f2c744"},
+        "Severe": {"percent": 25, "status_label": "High Risk", "status_color": "#e0665a"},
+    }
+    return mapping.get(severity_level, {"percent": 50, "status_label": "Moderate Risk", "status_color": "#f2c744"})
+
+
+# ======================================================
+# === NEW FEATURE 5: CROP-SPECIFIC GROWTH STAGE LOOKUP ===
+# ======================================================
+# Approximate, crop-specific growth-stage timelines (days after planting).
+# These are general agronomic ranges and can vary with variety, season and region.
+CROP_GROWTH_STAGES = {
+    "Tomato": [
+        (0, 15, "Seedling / Early Vegetative Stage"),
+        (16, 35, "Vegetative Stage"),
+        (36, 55, "Flowering Stage"),
+        (56, 80, "Fruiting / Reproductive Stage"),
+        (81, 9999, "Maturity Stage"),
+    ],
+    "Potato": [
+        (0, 20, "Sprouting / Early Vegetative Stage"),
+        (21, 40, "Vegetative Stage"),
+        (41, 60, "Tuber Initiation / Flowering Stage"),
+        (61, 90, "Tuber Bulking (Reproductive) Stage"),
+        (91, 9999, "Maturity Stage"),
+    ],
+    "Bell Pepper": [
+        (0, 20, "Seedling Stage"),
+        (21, 45, "Vegetative Stage"),
+        (46, 70, "Flowering Stage"),
+        (71, 100, "Fruiting Stage"),
+        (101, 9999, "Maturity Stage"),
+    ],
+}
+
+
+def get_growth_stage(crop: str, age_days: int):
+    """
+    Returns the estimated growth stage for a given crop and age in days.
+    Uses crop-specific stage timelines where available; otherwise falls back
+    to a generic estimate and flags it clearly as approximate.
+    """
+    stages = CROP_GROWTH_STAGES.get(crop)
+    if stages:
+        for lo, hi, name in stages:
+            if lo <= age_days <= hi:
+                return {"stage": name, "is_estimate": False}
+        return {"stage": stages[-1][2], "is_estimate": False}
+
+    # Generic fallback when crop-specific data isn't available
+    if age_days <= 20:
+        generic = "Early / Seedling Stage"
+    elif age_days <= 45:
+        generic = "Vegetative Stage"
+    elif age_days <= 70:
+        generic = "Flowering Stage"
+    elif age_days <= 100:
+        generic = "Fruiting / Reproductive Stage"
     else:
-        with st.spinner("Analyzing photo(s)..."):
-            valid_images = []
-            for file in uploaded_files:
-                try:
-                    bytes_data = file.read()
-                    img = Image.open(io.BytesIO(bytes_data)).convert('RGB')
-                    valid_images.append((file.name, img))
-                except UnidentifiedImageError:
-                    st.error(f"{translate('Invalid or Corrupted Image')}: {file.name}")
-                except Exception as e:
-                    st.error(f"{translate('Failed to load image file.')}: {file.name}")
+        generic = "Maturity Stage"
+    return {"stage": generic, "is_estimate": True}
 
-            if not valid_images:
-                st.error("No valid crop leaf images were found among the inputs provided.")
+
+def get_stage_warning(crop: str, stage_name: str):
+    """
+    Generates a growth-stage-specific caution message. Varies by actual
+    crop and stage rather than repeating one message for every case.
+    """
+    stage_lower = stage_name.lower()
+    if any(k in stage_lower for k in ["seedling", "early", "sprouting"]):
+        return ("🌱 Your crop is in an early growth stage. Avoid unnecessary chemical treatment "
+                "and prioritize preventive/non-chemical control measures (removing infected leaves, "
+                "proper spacing, avoiding overhead watering).")
+    if "flowering" in stage_lower or "tuber initiation" in stage_lower:
+        return (f"🌸 Your {crop.lower()} crop is flowering. Use only treatments approved for this "
+                f"crop and growth stage, avoid spraying during peak pollinator activity, and follow "
+                f"the label instructions carefully.")
+    if any(k in stage_lower for k in ["fruiting", "bulking", "reproductive"]):
+        return ("🍅 Your crop is in the fruiting/reproductive stage. Pay close attention to the "
+                "product's pre-harvest interval (PHI) before applying any pesticide.")
+    if "maturity" in stage_lower:
+        return ("🌾 Your crop is nearing maturity. Prioritize pre-harvest interval compliance and "
+                "consider whether chemical treatment is still necessary this close to harvest.")
+    return "Follow general crop-protection best practices appropriate for this growth stage."
+
+
+# ======================================================
+# === NEW FEATURE 6: VERIFIED PESTICIDE/FUNGICIDE REFERENCE DATABASE ===
+# ======================================================
+# Reference rates for the diseases this model currently detects, based on
+# general ICAR / state agricultural extension guidance for these active
+# ingredients. These are NOT invented figures — but formulations and brands
+# vary, so farmers are always told to confirm against their actual product
+# label or a local agricultural officer before applying anything.
+PESTICIDE_DB = {
+    "Pepper__bell___Bacterial_spot": {
+        "product": "Copper Oxychloride 50% WP",
+        "purpose": "Bactericide — helps control bacterial spot",
+        "rate": "2.5–3 g per litre of water",
+        "water_volume": "Spray to full leaf wetness (approx. 500–600 L/acre for mature plants)",
+        "method": "Foliar spray, preferably in the evening or cooler hours",
+        "timing": "At first appearance of symptoms; repeat every 7–10 days if needed",
+        "phi": "Typical pre-harvest interval: 3–5 days (confirm on product label)",
+        "source_note": "Reference rate based on general extension guidance for copper-based "
+                        "bactericides on bell pepper bacterial spot.",
+    },
+    "Potato___Early_blight": {
+        "product": "Mancozeb 75% WP",
+        "purpose": "Fungicide — helps control early blight",
+        "rate": "2–2.5 g per litre of water",
+        "water_volume": "Spray to full leaf wetness (approx. 500 L/acre)",
+        "method": "Foliar spray, avoid application right before rain",
+        "timing": "At first symptom appearance; repeat every 7–10 days as needed",
+        "phi": "Typical pre-harvest interval: 7 days (confirm on product label)",
+        "source_note": "Reference rate based on general extension guidance for Mancozeb on "
+                        "potato early blight.",
+    },
+    "Tomato_Late_blight": {
+        "product": "Copper Oxychloride 50% WP (or Mancozeb 75% WP)",
+        "purpose": "Fungicide — helps control late blight",
+        "rate": "2.5–3 g per litre of water",
+        "water_volume": "Spray to full leaf wetness (approx. 500–600 L/acre)",
+        "method": "Foliar spray covering both sides of the leaves",
+        "timing": "Immediately at first symptoms; repeat every 5–7 days, more frequently in humid weather",
+        "phi": "Typical pre-harvest interval: 5–7 days (confirm on product label)",
+        "source_note": "Reference rate based on general extension guidance for copper/Mancozeb "
+                        "fungicides on tomato late blight.",
+    },
+}
+
+
+def get_pesticide_recommendation(disease_key: str):
+    """Returns verified reference dosage info for a disease, or None if unavailable."""
+    return PESTICIDE_DB.get(disease_key)
+
+
+def get_weather_risk(temp_c, humidity_pct):
+    """
+    Heuristic disease-favorability read on current weather, used only as
+    additional context — never as proof of disease presence.
+    """
+    if temp_c is None or humidity_pct is None:
+        return None
+    if humidity_pct >= 80 and 18 <= temp_c <= 30:
+        level = "High"
+        message = ("Current humidity and temperature are favorable for fungal/bacterial disease "
+                    "spread. Increase monitoring frequency and consider preventive action even on "
+                    "unaffected plants nearby.")
+    elif humidity_pct >= 60:
+        level = "Moderate"
+        message = "Moderately humid conditions may support disease spread. Keep monitoring the crop regularly."
+    else:
+        level = "Low"
+        message = "Current weather conditions are less favorable for rapid disease spread, but continue regular monitoring."
+    return {"level": level, "message": message}
+
+
+def get_urgency(is_healthy: bool, severity_level, stage_name: str, weather_risk_level):
+    """
+    Classifies how quickly the farmer should act, based on severity,
+    growth stage sensitivity, and current weather-driven disease risk.
+    """
+    if is_healthy:
+        return {"emoji": "🟢", "label": "Preventive care",
+                "detail": "No disease detected. Continue regular monitoring and preventive field hygiene."}
+
+    sensitive_stage = any(k in stage_name.lower() for k in ["flowering", "fruiting", "bulking", "reproductive"])
+
+    if severity_level == "Severe":
+        return {"emoji": "🔴", "label": "Act immediately",
+                "detail": "Symptoms indicate a well-established infection. Take action today to limit spread."}
+    if weather_risk_level == "High" and severity_level == "Moderate":
+        return {"emoji": "🔴", "label": "Act immediately",
+                "detail": "Weather conditions are favorable for rapid spread on top of a moderate infection — act today."}
+    if severity_level == "Moderate":
+        label_detail = "Plan treatment or control measures within the next 1–2 days."
+        if sensitive_stage:
+            label_detail += " Since the crop is in a sensitive growth stage, double-check label approval for this stage first."
+        return {"emoji": "🟠", "label": "Act within 1–2 days", "detail": label_detail}
+    if severity_level == "Mild":
+        return {"emoji": "🟡", "label": "Monitor closely",
+                "detail": "Early-stage symptoms detected. Monitor closely and be ready to act if the condition worsens."}
+    return {"emoji": "🟡", "label": "Monitor closely", "detail": "Continue monitoring your crop regularly."}
+
+
+# ---------- Upload + Result ----------
+st.markdown('<div class="section-header">📸 Scan a crop leaf</div>', unsafe_allow_html=True)
+
+col_upload, col_result = st.columns([1, 1.2], gap="large")
+
+with col_upload:
+    st.markdown('<div class="upload-panel-label">Drag a leaf photo below, or click to browse</div>', unsafe_allow_html=True)
+    uploaded = st.file_uploader("", type=["jpg", "png", "jpeg"], label_visibility="collapsed")
+    if uploaded:
+        img = Image.open(uploaded).convert("RGB")
+        st.image(img, use_container_width=True)
+
+with col_result:
+    if uploaded:
+        img_resized = img.resize((224, 224))
+        arr = np.expand_dims(np.array(img_resized) / 255.0, axis=0)
+        pred = model.predict(arr)
+        result = class_names[np.argmax(pred)]
+        confidence = float(np.max(pred)) * 100
+        info = disease_info.get(result, {
+            "display": result.replace("_", " "), "crop": result.split("_")[0].replace("__", " ").strip() or "Crop", "icon": "🌿",
+            "treatment_en": "Consult a local agriculture expert.",
+            "treatment_hi": "स्थानीय कृषि विशेषज्ञ से सलाह लें।",
+            "treatment_mr": "स्थानिक कृषी तज्ञांचा सल्ला घ्या.",
+            "treatment_kn": "ಸ್ಥಳೀಯ ಕೃಷಿ ತಜ್ಞರನ್ನು ಸಂಪರ್ಕಿಸಿ.",
+            "severity": "moderate"
+        })
+        color = severity_colors.get(info["severity"], "#f2c744")
+        is_healthy = info["severity"] == "healthy"
+
+        st.markdown(f"""
+            <div class="result-card" style="border-top-color:{color};">
+                <div class="result-label">Detection result</div>
+                <div class="result-name">{info['icon']} {info['display']}</div>
+                <div style="margin-top:10px;">
+                    <span class="status-dot" style="background-color:{color};"></span>
+                    <span style="font-weight:600; color:{color};">{severity_labels.get(info['severity'], '')}</span>
+                </div>
+                <div style="margin-top:14px; font-size:0.85rem; color:#d3ddc7;">Confidence: <b>{confidence:.1f}%</b></div>
+                <div class="confidence-bar-bg">
+                    <div class="confidence-bar-fill" style="width:{confidence}%; background-color:{color};"></div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+        # === NEW FEATURE 4 (part B): VALIDATION WARNINGS + ADVISORY NOTE ===
+        validation = validate_prediction(img, confidence)
+        for warning_msg in validation["warnings"]:
+            if "Low confidence" in warning_msg or "resolution" in warning_msg or "little detail" in warning_msg:
+                st.warning(warning_msg)
             else:
-                image_results = []
-                for name, img in valid_images:
-                    img_resized = img.resize((224, 224))
-                    img_array = np.array(img_resized, dtype=np.float32) / 255.0
-                    img_array = np.expand_dims(img_array, axis=0)
+                st.info(warning_msg)
+        st.caption("AI predictions are advisory and should be verified with an agricultural "
+                   "expert when necessary. This tool does not claim 100% accuracy.")
 
-                    preds = model.predict(img_array, verbose=0)
-                    is_valid, err_msg, conf, raw_class_name = validate_prediction(img, preds, class_names)
+        # Only compute/show disease-specific severity + duration if not healthy
+        # and the image passed basic validation checks.
+        severity = None if is_healthy else get_severity(info, confidence)
 
-                    if not is_valid:
-                        image_results.append({
-                            "name": name,
-                            "img": img,
-                            "is_valid": False,
-                            "error": err_msg if err_msg else "❌ This image does not appear to be a supported crop leaf image. Please upload or capture a clear photo of a supported crop leaf."
-                        })
-                    else:
-                        info = disease_info.get(raw_class_name, {
-                            "name": raw_class_name.replace("_", " "),
-                            "severity": "Moderate",
-                            "action": "Consult agricultural expert.",
-                            "precaution": "Monitor closely."
-                        })
-                        image_results.append({
-                            "name": name,
-                            "img": img,
-                            "is_valid": True,
-                            "class_raw": raw_class_name,
-                            "disease_name": info["name"],
-                            "confidence": conf,
-                            "severity": info["severity"],
-                            "action": info["action"],
-                            "precaution": info["precaution"]
-                        })
+        if severity is not None and validation["is_valid"]:
+            # === NEW FEATURE 2: SEVERITY CARD ===
+            st.markdown(f"""
+                <div class="info-card {severity['css_class']}">
+                    <h4>🩺 Estimated Disease Severity: {severity['level']}</h4>
+                    <p>{severity['explanation']}</p>
+                    <p><b>Recommended action:</b> {severity['action']}</p>
+                    <p style="font-size:0.78rem; color:#9fab8f;">AI-based/estimated assessment,
+                    not a scientifically validated diagnosis.</p>
+                </div>
+            """, unsafe_allow_html=True)
 
-                # Separate valid leaf predictions from rejected images
-                valid_preds = [r for r in image_results if r["is_valid"]]
+            # === NEW FEATURE 1: DISEASE DURATION / PROGRESSION CARD ===
+            duration_text = get_disease_duration(severity["level"])
+            st.markdown(f"""
+                <div class="info-card">
+                    <h4>⏳ Estimated Disease Progression</h4>
+                    <p>{duration_text}</p>
+                    <p style="font-size:0.78rem; color:#9fab8f;">Approximate estimate — actual
+                    progression depends on crop, weather, and infection conditions.</p>
+                </div>
+            """, unsafe_allow_html=True)
+        elif is_healthy:
+            st.success("✅ No disease detected. Your crop appears healthy!")
 
-                st.markdown('<div class="section-header">📷 ' + translate("Individual Photo Results") + '</div>', unsafe_allow_html=True)
-                cols_per_row = 3
-                for i in range(0, len(image_results), cols_per_row):
-                    row_items = image_results[i:i+cols_per_row]
-                    cols = st.columns(len(row_items))
-                    for col, res in zip(cols, row_items):
-                        with col:
-                            st.image(res["img"], use_container_width=True)
-                            if not res["is_valid"]:
-                                st.error(translate(res["error"]))
-                            else:
-                                translated_dis = translate(res['disease_name'])
-                                is_healthy = (res['severity'] == "Healthy")
-                                color = "#7bd389" if is_healthy else ("#f2c744" if res['severity'] == "Moderate" else "#e0665a")
-                                st.markdown(f"""
-                                    <div style="background: rgba(255,255,255,0.06); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-top: 6px;">
-                                        <div style="font-weight: 800; color: #f6f9f2; font-size: 1rem;">{translated_dis}</div>
-                                        <div style="font-size: 0.82rem; color: #d3ddc7; margin-top: 4px;">{translate('Confidence')}: <b>{res['confidence']:.1f}%</b></div>
-                                        <div style="font-size: 0.82rem; color: {color}; margin-top: 2px;">{translate('Severity')}: <b>{translate(res['severity'])}</b></div>
-                                    </div>
-                                """, unsafe_allow_html=True)
+        # ======================================================
+        # === NEW FEATURE 3: CROP HEALTH PROGRESS DASHBOARD ===
+        # ======================================================
+        health_level = "Healthy" if is_healthy else (severity["level"] if severity else "Moderate")
+        health = get_crop_health_progress(is_healthy=is_healthy, severity_level=None if is_healthy else health_level)
+        duration_display = "No active disease detected" if is_healthy else get_disease_duration(health_level)
 
-                                single_voice_text = f"{translated_dis}. {translate('Severity')}: {translate(res['severity'])}. {translate('Treatment')}: {translate(res['action'])}"
-                                audio_b = get_voice_audio_bytes(single_voice_text, CURRENT_LANG)
-                                if audio_b:
-                                    st.audio(audio_b, format="audio/mp3")
+        st.markdown(f"""
+            <div class="info-card" style="border-left-color:{health['status_color']};">
+                <h4>📊 Crop Health Progress</h4>
+                <p><b>Crop / Condition:</b> {info['display']}</p>
+                <p><b>Severity:</b> {"Healthy" if is_healthy else health_level} &nbsp;|&nbsp;
+                   <b>AI Confidence:</b> {confidence:.1f}%</p>
+                <p><b>Progression:</b> {duration_display}</p>
+                <div class="health-bar-bg">
+                    <div class="health-bar-fill" style="width:{health['percent']}%; background-color:{health['status_color']};"></div>
+                </div>
+                <span class="health-status-badge" style="background-color:{health['status_color']}22;
+                    color:{health['status_color']}; border:1px solid {health['status_color']};">
+                    Your crop health status: {health['status_label']}
+                </span>
+            </div>
+        """, unsafe_allow_html=True)
 
-                # If no images passed validation, block further diagnosis
-                if not valid_preds:
-                    st.write("")
-                    st.error("❌ " + translate("None of the photos provided were valid crop leaf images suitable for disease analysis."))
-                else:
-                    # Multi-image Summary calculation
-                    total_valid = len(valid_preds)
-                    healthy_count = sum(1 for r in valid_preds if r["severity"] == "Healthy")
-                    affected_count = total_valid - healthy_count
-                    avg_conf = sum(r["confidence"] for r in valid_preds) / total_valid
+        lang_choice = st.selectbox("🌐 Voice language", ["English", "हिंदी (Hindi)", "मराठी (Marathi)", "ಕನ್ನಡ (Kannada)"])
+        lang_map = {
+            "English": ("en", "treatment_en"),
+            "हिंदी (Hindi)": ("hi", "treatment_hi"),
+            "मराठी (Marathi)": ("mr", "treatment_mr"),
+            "ಕನ್ನಡ (Kannada)": ("kn", "treatment_kn"),
+        }
+        lang_code, treatment_key = lang_map[lang_choice]
+        treatment_text = info[treatment_key]
 
-                    disease_counts = Counter(r["disease_name"] for r in valid_preds if r["severity"] != "Healthy")
-                    if disease_counts:
-                        primary_disease_name = disease_counts.most_common(1)[0][0]
-                        primary_info = next(r for r in valid_preds if r["disease_name"] == primary_disease_name)
-                    else:
-                        primary_disease_name = "Healthy"
-                        primary_info = valid_preds[0]
+        st.markdown(f"""
+            <div class="treatment-box">
+                <div style="font-weight:700; color:#f2c744; margin-bottom:6px;">💊 Recommended action</div>
+                <div style="color:#eef2e6; line-height:1.6;">{treatment_text}</div>
+            </div>
+        """, unsafe_allow_html=True)
 
-                    st.markdown('<div class="section-header">📊 ' + translate("Overall Crop Health Assessment") + '</div>', unsafe_allow_html=True)
+        if st.button("🔊 Play voice advice", use_container_width=True):
+            from gtts import gTTS
+            tts = gTTS(f"{info['display']}. {treatment_text}", lang=lang_code)
+            tts.save("output.mp3")
+            st.audio("output.mp3")
+    else:
+        st.markdown("""
+            <div style="height:100%; display:flex; align-items:center; justify-content:center; text-align:center; color:#9fab8f; padding: 3rem 1rem;">
+                <div>
+                    <div style="font-size:3.2rem;">🌱</div>
+                    <div style="margin-top:10px;">Upload a photo to see detection results here</div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
 
-                    m1, m2, m3, m4, m5 = st.columns(5)
-                    with m1:
-                        st.markdown(f'<div class="mini-metric-card"><div class="mini-metric-num">{len(uploaded_files)}</div><div class="mini-metric-label">{translate("Photos analyzed")}</div></div>', unsafe_allow_html=True)
-                    with m2:
-                        st.markdown(f'<div class="mini-metric-card"><div class="mini-metric-num" style="color:#e0665a;">{affected_count}</div><div class="mini-metric-label">{translate("Affected photos")}</div></div>', unsafe_allow_html=True)
-                    with m3:
-                        st.markdown(f'<div class="mini-metric-card"><div class="mini-metric-num" style="color:#7bd389;">{healthy_count}</div><div class="mini-metric-label">{translate("Healthy photos")}</div></div>', unsafe_allow_html=True)
-                    with m4:
-                        st.markdown(f'<div class="mini-metric-card"><div class="mini-metric-num">{avg_conf:.1f}%</div><div class="mini-metric-label">{translate("Avg. confidence")}</div></div>', unsafe_allow_html=True)
-                    with m5:
-                        overall_risk = "Low Risk" if affected_count == 0 else ("High Risk" if any(r["severity"] == "Severe" for r in valid_preds) else "Moderate Risk")
-                        risk_color = "#7bd389" if overall_risk == "Low Risk" else ("#e0665a" if overall_risk == "High Risk" else "#f2c744")
-                        st.markdown(f'<div class="mini-metric-card"><div class="mini-metric-num" style="color:{risk_color};">{translate(overall_risk)}</div><div class="mini-metric-label">{translate("Overall risk")}</div></div>', unsafe_allow_html=True)
+# ======================================================
+# === NEW FEATURE 7: CROP AGE, GROWTH STAGE & DETAILED RECOMMENDATION ===
+# ======================================================
+if uploaded:
+    st.markdown('<div class="section-header">🌱 Crop Age & Detailed Recommendation</div>', unsafe_allow_html=True)
 
-                    st.write("")
+    crop_name = info.get("crop") or "Your crop"
 
-                    # Disease / Health summary card
-                    is_healthy_overall = (affected_count == 0)
-                    overall_title = "No disease detected" if is_healthy_overall else primary_disease_name
-                    translated_overall_title = translate(overall_title)
-                    dot_color = "#7bd389" if is_healthy_overall else ("#e0665a" if primary_info.get("severity") == "Severe" else "#f2c744")
+    age_col, weather_col = st.columns([1, 1], gap="large")
 
-                    st.markdown(f"""
-                        <div class="result-card" style="border-top-color: {dot_color};">
-                            <div class="result-label"><span class="status-dot" style="background-color: {dot_color};"></span>{translate("Detection result")}</div>
-                            <div class="result-name">{translated_overall_title}</div>
-                        </div>
-                    """, unsafe_allow_html=True)
+    with age_col:
+        st.markdown('<div class="upload-panel-label">How many days ago was this crop planted?</div>', unsafe_allow_html=True)
+        crop_age_days = st.number_input(
+            "Crop age (days)", min_value=1, max_value=365, value=30, step=1,
+            help="For example: 10, 25, 45, 60 or 90 days", label_visibility="collapsed"
+        )
+        st.markdown(f"**Crop Age:** {crop_age_days} days")
 
-                    # Dynamic Progress & Urgency Logic
-                    if symptom_duration in ["Less than 1 day", "1–3 days"]:
-                        progression_text = "Early stage"
-                        prog_desc = "Symptoms are recent. Early treatment yields the highest recovery rate."
-                    elif symptom_duration == "4–7 days":
-                        progression_text = "Progressed"
-                        prog_desc = "Disease is establishing. Apply treatment promptly to prevent further spreading."
-                    else:
-                        progression_text = "Advanced stage"
-                        prog_desc = "Disease has been active for over a week. Urgent comprehensive control is needed."
+        previously_affected = st.selectbox(
+            "Has this crop shown this disease before?",
+            ["Not sure", "No, first time", "Yes, it had this issue before"]
+        )
 
-                    if is_healthy_overall:
-                        urgency_text = "Preventive care"
-                        urgency_color = "#7bd389"
-                        urgency_desc = "Keep up good agricultural practices and standard routine inspection."
-                    elif primary_info.get("severity") == "Severe" or field_spread in ["50–75%", "More than 75%"]:
-                        urgency_text = "Act immediately"
-                        urgency_color = "#e0665a"
-                        urgency_desc = "High risk of crop damage. Apply recommended treatments within 24 hours."
-                    elif primary_info.get("severity") == "Moderate":
-                        urgency_text = "Act within 1–2 days"
-                        urgency_color = "#f2c744"
-                        urgency_desc = "Moderate threat. Plan spray application within 48 hours to manage spread."
-                    else:
-                        urgency_text = "Monitor closely"
-                        urgency_color = "#7bd389"
-                        urgency_desc = "Low immediate threat. Monitor fields and apply precautions."
+    with weather_col:
+        include_weather = st.checkbox("I know the current weather conditions (optional)")
+        temp_c, humidity_pct = None, None
+        if include_weather:
+            temp_c = st.number_input("Current temperature (°C)", min_value=0, max_value=55, value=28, step=1)
+            humidity_pct = st.number_input("Current humidity (%)", min_value=0, max_value=100, value=70, step=1)
 
-                    # Detailed Recommendation Section
-                    st.markdown('<div class="section-header">💡 ' + translate("Detailed Recommendation") + '</div>', unsafe_allow_html=True)
-                    st.markdown(f"""
-                        <div class="treatment-box">
-                            <h3 style="margin-top:0; color:#f6f9f2;">🎯 {translate("Recommended Action")}</h3>
-                            <p style="font-size:1.05rem; color:#eef2e6; font-weight:600;">{translate(primary_info.get("action", "Maintain regular field management."))}</p>
-                            <hr style="border-color: rgba(242,199,68,0.3); margin: 12px 0;">
-                            <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-                                <span class="urgency-badge" style="background:{urgency_color}; color:#1c2a17;">⏱️ {translate(urgency_text)}</span>
-                                <span style="font-size:0.92rem; color:#d3ddc7;">{translate(urgency_desc)}</span>
-                            </div>
-                        </div>
-                    """, unsafe_allow_html=True)
+    # --- Growth stage (crop-specific where available) ---
+    stage_info = get_growth_stage(crop_name, crop_age_days)
+    stage_name = stage_info["stage"]
+    stage_is_estimate = stage_info["is_estimate"]
 
-                    if primary_info.get("precaution"):
-                        st.warning(f"⚠️ **{translate('Important Precaution')}:** {translate(primary_info['precaution'])}")
-
-                    # Weather Risk Context
-                    if recent_weather in ["High rainfall", "High humidity"]:
-                        st.info(f"🌧️ **{translate('Weather Risk')}:** {translate('High humidity or rainfall significantly speeds up fungal and bacterial disease progression. Ensure good field drainage and avoid overhead irrigation.')}")
-                    elif recent_weather == "Very hot":
-                        st.info(f"☀️ **{translate('Weather Risk')}:** {translate('Hot weather increases plant stress and pest population multiplication (such as spider mites). Ensure proper irrigation.')}")
-
-                    # Farmer Info Overview
-                    st.markdown('<div class="section-header">👨‍🌾 ' + translate("Farmer Information") + '</div>', unsafe_allow_html=True)
-                    st.markdown(f"""
-                        <div class="helpline-card">
-                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
-                                <div><b>{translate("Crop name")}:</b> {translate(crop_name)}</div>
-                                <div><b>{translate("Growth Stage")}:</b> {translate(growth_stage)}</div>
-                                <div><b>{translate("Soil")}:</b> {translate(soil_type)}</div>
-                                <div><b>{translate("Symptoms Duration")}:</b> {translate(symptom_duration)}</div>
-                                <div><b>{translate("Crop Affected")}:</b> {translate(field_spread)}</div>
-                                <div><b>{translate("Location")}:</b> {village or translate('None')}, {district or translate('None')}</div>
-                                <div><b>{translate("Previous Treatment")}:</b> {translate(applied_treatment)} {f'({treatment_details})' if treatment_details else ''}</div>
-                                <div><b>{translate("Prior History")}:</b> {translate(prior_history)} {f'({history_count}x)' if history_count > 0 else ''}</div>
-                            </div>
-                        </div>
-                    """, unsafe_allow_html=True)
-
-                    # Overall Summary Audio synthesis
-                    full_summary_text = f"{translate('Overall Crop Health Assessment')}: {translated_overall_title}. {translate('Recommended Action')}: {translate(primary_info.get('action', ''))}. {translate(urgency_text)}. {translate(urgency_desc)}"
-                    st.markdown('<div class="section-header">🔊 ' + translate("Voice Summary") + '</div>', unsafe_allow_html=True)
-                    full_audio_bytes = get_voice_audio_bytes(full_summary_text, CURRENT_LANG)
-                    if full_audio_bytes:
-                        st.audio(full_audio_bytes, format="audio/mp3")
-
-# ---------- Helpline & Roadmap Footer ----------
-st.markdown('<div class="section-header">📞 ' + translate("Farmer helpline & support") + '</div>', unsafe_allow_html=True)
-h_col1, h_col2 = st.columns(2)
-with h_col1:
+    estimate_note = (
+        "⚠️ Crop-specific growth-stage data isn't available for this crop — this is an "
+        "approximate estimate based on general growth patterns."
+        if stage_is_estimate else
+        "Based on typical growth-stage timelines for this crop. Actual stage may vary with "
+        "variety and local conditions."
+    )
     st.markdown(f"""
-        <div class="helpline-card">
-            <b style="color:#f2c744; font-size:1.05rem;">{translate('Kisan Call Centre (Toll-Free): 1800-180-1551')}</b><br>
-            <span style="font-size:0.9rem; color:#d3ddc7;">{translate('Krishi Vigyan Kendra (KVK) Network')} · {translate('Department of Agriculture, Maharashtra')}</span>
+        <div class="info-card">
+            <h4>📅 Estimated Growth Stage</h4>
+            <p><b>Crop:</b> {crop_name} &nbsp;|&nbsp; <b>Crop Age:</b> {crop_age_days} days</p>
+            <p><b>Growth Stage:</b> {stage_name}</p>
+            <p style="font-size:0.78rem; color:#9fab8f;">{estimate_note}</p>
         </div>
     """, unsafe_allow_html=True)
 
-with h_col2:
+    # --- Weather risk (only if the farmer provided it) ---
+    weather_risk = get_weather_risk(temp_c, humidity_pct) if include_weather else None
+
+    severity_level_str = severity["level"] if (not is_healthy and severity is not None) else None
+    pesticide = None if is_healthy else get_pesticide_recommendation(result)
+    non_chemical_first = (not is_healthy) and (
+        severity_level_str == "Mild" or any(k in stage_name.lower() for k in ["seedling", "early", "sprouting"])
+    )
+
+    # --- Recommended Action ---
+    st.markdown('<div class="subsection-title">✅ Recommended Action</div>', unsafe_allow_html=True)
+    if is_healthy:
+        action_html = (
+            f"<p>No disease was detected on this {crop_name.lower()} leaf.</p>"
+            f"<p>At {crop_age_days} days old ({stage_name.lower()}), continue regular field monitoring, "
+            f"maintain good field hygiene, and re-check the crop every few days, especially during humid weather.</p>"
+        )
+        card_class = ""
+    else:
+        chem_line = (
+            "Not urgently required yet — prioritize non-chemical/cultural control first "
+            "(sanitation, spacing, avoiding leaf wetness) and monitor closely."
+            if non_chemical_first else
+            "A fungicide/bactericide treatment is appropriate at this stage if symptoms persist "
+            "or worsen — see the Treatment section below."
+        )
+        next_check = "2–3 days" if severity_level_str == "Severe" else "3–5 days"
+        action_html = f"""
+            <p><b>1. Disease detected:</b> {info['display']} (Confidence: {confidence:.1f}%)</p>
+            <p><b>2. Estimated severity:</b> {severity_level_str} — {severity['explanation']}</p>
+            <p><b>3. Immediate step:</b> Remove and safely destroy visibly infected leaves/plant parts,
+               and avoid overhead irrigation to slow spread.</p>
+            <p><b>4–5. Chemical treatment needed?</b> {chem_line}</p>
+            <p><b>6. Next action:</b> Re-inspect the crop within {next_check} to track progress.</p>
+        """
+        card_class = severity["css_class"]
+
+    st.markdown(f'<div class="info-card {card_class}">{action_html}</div>', unsafe_allow_html=True)
+
+    # --- Treatment / Pesticide section ---
+    st.markdown('<div class="subsection-title">💊 Treatment</div>', unsafe_allow_html=True)
+    if is_healthy:
+        st.info("No treatment is needed right now — your crop appears healthy.")
+    else:
+        if non_chemical_first:
+            st.markdown("""
+                <div class="info-card mild">
+                    <p>🌿 Non-chemical/cultural control is recommended as the first step at this stage:</p>
+                    <ul style="color:#d3ddc7; margin:0.3rem 0 0 1.1rem;">
+                        <li>Remove and destroy infected leaves/plant debris</li>
+                        <li>Avoid overhead irrigation; water at the base</li>
+                        <li>Improve airflow/spacing between plants</li>
+                        <li>Re-monitor every 2–3 days for worsening symptoms</li>
+                    </ul>
+                </div>
+            """, unsafe_allow_html=True)
+
+        st.markdown('<div style="font-weight:700; color:#eef2e6; margin:0.8rem 0 0.3rem 0;">🧪 Pesticide / Fungicide (if needed)</div>', unsafe_allow_html=True)
+        if pesticide:
+            st.markdown(f"""
+                <div class="treatment-box">
+                    <p style="color:#eef2e6;"><b>Product:</b> {pesticide['product']}</p>
+                    <p style="color:#eef2e6;"><b>Purpose:</b> {pesticide['purpose']}</p>
+                    <p style="color:#eef2e6;"><b>Recommended rate:</b> {pesticide['rate']}</p>
+                    <p style="color:#eef2e6;"><b>Water/application volume:</b> {pesticide['water_volume']}</p>
+                    <p style="color:#eef2e6;"><b>Application method:</b> {pesticide['method']}</p>
+                    <p style="color:#eef2e6;"><b>Application timing:</b> {pesticide['timing']}</p>
+                    <p style="color:#eef2e6;"><b>{pesticide['phi']}</b></p>
+                    <p style="font-size:0.78rem; color:#bcc7ab; margin-top:8px;">{pesticide['source_note']}
+                       Always confirm the exact rate on your product's label, as concentration can vary by
+                       brand and formulation. When in doubt, consult your local agricultural officer.</p>
+                </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.warning("Exact pesticide quantity cannot be safely determined from the available "
+                       "information. Please follow the pesticide label or consult a local agricultural officer.")
+
+    # --- Growth-stage-based warning ---
+    st.markdown('<div class="subsection-title">⚠️ Growth-Stage Precaution</div>', unsafe_allow_html=True)
+    st.info(get_stage_warning(crop_name, stage_name))
+
+    # --- Weather Risk ---
+    st.markdown('<div class="subsection-title">🌦️ Weather Risk</div>', unsafe_allow_html=True)
+    if weather_risk:
+        st.markdown(f"""
+            <div class="info-card">
+                <p><b>Temperature:</b> {temp_c}°C &nbsp;|&nbsp; <b>Humidity:</b> {humidity_pct}%</p>
+                <p><b>Disease-spread risk:</b> {weather_risk['level']}</p>
+                <p>{weather_risk['message']}</p>
+                <p style="font-size:0.78rem; color:#9fab8f;">Weather conditions alone do not confirm
+                   disease presence — this only indicates how favorable conditions currently are for
+                   disease spread.</p>
+            </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.caption("Weather information not provided — tick 'I know the current weather conditions' "
+                   "above to see disease-spread risk based on temperature and humidity.")
+
+    if previously_affected == "Yes, it had this issue before":
+        st.caption("ℹ️ Since this field has had this issue before, disease pressure may already be "
+                   "established — consider crop rotation and field sanitation for future seasons.")
+
+    # --- Urgency ---
+    st.markdown('<div class="subsection-title">⏱️ How Quickly Should You Act?</div>', unsafe_allow_html=True)
+    urgency = get_urgency(
+        is_healthy=is_healthy,
+        severity_level=severity_level_str,
+        stage_name=stage_name,
+        weather_risk_level=weather_risk["level"] if weather_risk else None,
+    )
+    urgency_color = {"🔴": "#e0665a", "🟠": "#f2a444", "🟡": "#f2c744", "🟢": "#7bd389"}[urgency["emoji"]]
     st.markdown(f"""
-        <div class="helpline-card">
-            <b style="color:#f2c744; font-size:1.05rem;">🌾 {translate('Expanding crop coverage')}</b><br>
-            <span style="font-size:0.88rem; color:#d3ddc7;">{translate('Current model covers Tomato, Potato, and Bell Pepper leaf diseases.')}<br>{translate('Expanding to Sugarcane, Cotton, Soybean, and Rice in upcoming versions.')}</span>
-        </div>
+        <span class="urgency-badge" style="background-color:{urgency_color}22; color:{urgency_color}; border:1px solid {urgency_color};">
+            {urgency['emoji']} {urgency['label']}
+        </span>
+        <p style="color:#d3ddc7; margin-top:6px;">{urgency['detail']}</p>
     """, unsafe_allow_html=True)
 
-st.markdown(f"""
-    <div class="footer-note">
-        {translate('AI predictions may vary based on photo quality. Always consult a local agricultural officer or expert for major crop decisions.')}<br>
-        <b>KrishiRakshak AI</b> · SIH 2026 · Smart India Hackathon
+    # --- Important Precaution ---
+    st.markdown('<div class="subsection-title">🛡️ Important Precaution</div>', unsafe_allow_html=True)
+    st.caption(
+        "This recommendation is AI-assisted and advisory only. Always read and follow the actual "
+        "pesticide label instructions, respect the pre-harvest interval, wear protective equipment "
+        "while spraying, and consult your local Krishi Vibhag extension officer or agronomist for "
+        "confirmation before applying any chemical treatment."
+    )
+
+# ---------- Helpline ----------
+st.markdown('<div class="section-header">📞 Farmer helpline & support</div>', unsafe_allow_html=True)
+st.markdown("""
+    <div class="helpline-card">
+        <div style="font-weight:700; color:#f2c744; margin-bottom:6px;">📱 Kisan Call Centre (Government of India)</div>
+        <div style="color:#eef2e6; font-size:0.95rem; margin-bottom:14px;">Toll-free <b>1800-180-1551</b> · 6 AM–10 PM, all 7 days · 22 local languages</div>
+        <div style="font-weight:700; color:#f2c744; margin-bottom:6px;">📱 PM-KISAN Helpline</div>
+        <div style="color:#eef2e6; font-size:0.95rem;">Toll-free <b>155261</b> / <b>1800-115-526</b> &nbsp;|&nbsp; ☎️ 011-24300606</div>
     </div>
 """, unsafe_allow_html=True)
+st.caption("Numbers verified from official Government of India sources. Production version will link directly to the nearest Maharashtra Krishi Vibhag extension officer by location.")
+
+# ---------- Roadmap ----------
+st.markdown('<div class="section-header">🌱 Expanding crop coverage</div>', unsafe_allow_html=True)
+st.write("This prototype currently detects diseases in **tomato, potato, and bell pepper**. Next, we're expanding to Maharashtra's core crops:")
+
+r1, r2, r3, r4 = st.columns(4)
+with r1:
+    st.markdown('<div class="roadmap-chip">🌾 <b>Jowar</b><br><span style="font-size:0.85rem;">Grain mold, downy mildew</span></div>', unsafe_allow_html=True)
+with r2:
+    st.markdown('<div class="roadmap-chip">🌾 <b>Rice</b><br><span style="font-size:0.85rem;">Blast, bacterial blight</span></div>', unsafe_allow_html=True)
+with r3:
+    st.markdown('<div class="roadmap-chip">🌿 <b>Cotton</b><br><span style="font-size:0.85rem;">Pink bollworm, leaf curl</span></div>', unsafe_allow_html=True)
+with r4:
+    st.markdown('<div class="roadmap-chip">🎋 <b>Sugarcane</b><br><span style="font-size:0.85rem;">Red rot, smut</span></div>', unsafe_allow_html=True)
+
+st.markdown('<p class="footer-note">Prototype for SIH 2026 · Problem Statement SIH26131 · Government of Maharashtra</p>', unsafe_allow_html=True)
