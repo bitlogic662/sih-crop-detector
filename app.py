@@ -66,6 +66,13 @@ def assess_weather_risk(temp_c, humidity_pct):
         return "Low", "Current temperature and humidity are less favorable for rapid disease spread, but continue routine monitoring."
 
 # ---------- MULTI-LANGUAGE UI SUPPORT ----------
+LANGUAGES = {
+    "English": "en",
+    "हिंदी (Hindi)": "hi",
+    "मराठी (Marathi)": "mr",
+    "ಕನ್ನಡ (Kannada)": "kn",
+}
+
 UI_TRANSLATIONS = {
     "en": {},
     "hi": {
@@ -467,7 +474,7 @@ UI_TRANSLATIONS = {
         "Detection result": "ಪತ್ತೆ ಫಲಿತಾಂಶ",
         "Unsupported image": "ಬೆಂಬಲವಿಲ್ಲದ ಚಿತ್ರ",
         "❌ This image does not appear to be a supported crop leaf image. Please upload or capture a clear photo of a supported crop leaf.": "❌ ಈ ಚಿತ್ರವು ಬೆಂಬಲಿತ ಬೆಳೆ ಎಲೆಯ ಚಿತ್ರವಾಗಿರುವಂತೆ ಕಾಣುತ್ತಿಲ್ಲ. ದಯವಿಟ್ಟು ಬೆಂಬಲಿತ ಬೆಳೆ ಎಲೆಯ ಸ್ಪಷ್ಟ ಫೋಟೋವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ ಅಥವಾ ತೆಗೆದುಕೊಳ್ಳಿ.",
-        "Image resolution is too low. Please upload a clearer photo.": "ಚಿತ್ರದ ರೆಜಲ್ಯೂಶನ್ ತುಂಬಾ ಕಡಿಮೆಯಾಗಿದೆ. ದಯವಿಟ್ಟು ಸ್ಪಷ್ಟವಾದ ಫೋಟೋವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ.",
+        "Image resolution is too low. Please upload a clearer photo.": "ಚಿತ್ರದ রেজಲ್ಯೂಶನ್ ತುಂಬಾ ಕಡಿಮೆಯಾಗಿದೆ. ದಯವಿಟ್ಟು ಸ್ಪಷ್ಟವಾದ ಫೋಟೋವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ.",
         "Image appears too blurry or lacks visible detail. Please provide a sharp photo.": "ಚಿತ್ರವು ತುಂಬಾ ಮಸುಕಾಗಿ ಕಾಣುತ್ತದೆ ಅಥವಾ ವಿವರಗಳ ಕೊರತೆಯಿದೆ. ದಯವಿಟ್ಟು ಸ್ಪಷ್ಟವಾದ ಫೋಟೋವನ್ನು ನೀಡಿ.",
         "The model is not confident enough in this image prediction. Please ensure it is a clear leaf photo.": "ಈ ಚಿತ್ರದ ಮುನ್ನೋಟದ ಬಗ್ಗೆ ಮಾದರಿಗೆ ಸಾಕಷ್ಟು ವಿಶ್ವಾಸವಿಲ್ಲ. ದಯವಿಟ್ಟು ಇದು ಸ್ಪಷ್ಟ ಎಲೆಯ ಫೋಟೋ ಎಂದು ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಿ.",
         "No valid crop leaf images were found among the inputs provided.": "ನೀಡಿದ ಇನ್‌ಪುಟ್‌ಗಳಲ್ಲಿ ಯಾವುದೇ ಸಿಂಧು ಬೆಳೆ ಎಲೆಯ ಚಿತ್ರಗಳು ಕಂಡುಬಂದಿಲ್ಲ.",
@@ -502,36 +509,15 @@ UI_TRANSLATIONS = {
     }
 }
 
-# ---------- STABLE LANGUAGE CODES (used for widget state — never translated) ----------
-LANGUAGE_CODES = ["en", "hi", "mr", "kn"]
-LANGUAGE_DISPLAY_NAMES = {
-    "en": "English",
-    "hi": "हिंदी (Hindi)",
-    "mr": "मराठी (Marathi)",
-    "kn": "ಕನ್ನಡ (Kannada)"
-}
-
-# ---------- Sidebar Language Selector ----------
-# Stores ONLY the stable internal code ("en"/"hi"/"mr"/"kn") as the widget's
-# value via st.session_state["current_language"]; only the *displayed*
-# label is translated, via format_func. st.sidebar.selectbox is a separate
-# object from the top-level st.selectbox that gets monkey-patched further
-# below, so it is never affected by that wrapper — this call is safe to
-# leave exactly where it is, unwrapped, with no need to touch anything else.
+# Sidebar Language Selector
 st.sidebar.markdown("### 🌐 Language / भाषा / भाषा / ಭಾಷೆ")
-
-if "current_language" not in st.session_state:
-    st.session_state.current_language = "en"
-
-selected_language_code = st.sidebar.selectbox(
+selected_language = st.sidebar.selectbox(
     "Select language",
-    LANGUAGE_CODES,
-    format_func=lambda code: LANGUAGE_DISPLAY_NAMES[code],
-    key="current_language",
+    list(LANGUAGES.keys()),
+    key="global_language_selector",
     label_visibility="collapsed"
 )
-
-CURRENT_LANG = selected_language_code
+CURRENT_LANG = LANGUAGES[selected_language]
 
 def translate(text):
     """Robust centralized text translation helper function."""
@@ -547,8 +533,7 @@ def translate(text):
             out = out.replace(source, target)
     return out
 
-# Capture originals BEFORE they get overridden below, so the language
-# selector (and anything else that needs it) can always bypass translation.
+# Override Streamlit components to automatically apply translation
 _original_markdown = st.markdown
 _original_caption = st.caption
 _original_info = st.info
@@ -596,10 +581,6 @@ def _translated_submit(label, *args, **kwargs):
     return _original_form_submit_button(translate(label), *args, **kwargs)
 
 def _translated_selectbox(label, options, *args, **kwargs):
-    # Internal values (options) always stay as the original English source
-    # values. Only the displayed label and displayed option text are
-    # translated, so switching languages never breaks widget state.
-    options = list(options)
     display_options = [translate(x) if isinstance(x, str) else x for x in options]
     idx = _original_selectbox(translate(label), display_options, *args, **kwargs)
     try:
@@ -612,7 +593,6 @@ def _translated_checkbox(label, *args, **kwargs):
     return _original_checkbox(translate(label), *args, **kwargs)
 
 def _translated_radio(label, options, *args, **kwargs):
-    options = list(options)
     display_options = [translate(x) if isinstance(x, str) else x for x in options]
     res = _original_radio(translate(label), display_options, *args, **kwargs)
     try:
