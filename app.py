@@ -1,4 +1,5 @@
 import streamlit as st
+import hashlib
 from tensorflow.keras.models import load_model
 from PIL import Image, UnidentifiedImageError, ImageStat
 import numpy as np
@@ -66,11 +67,17 @@ def assess_weather_risk(temp_c, humidity_pct):
         return "Low", "Current temperature and humidity are less favorable for rapid disease spread, but continue routine monitoring."
 
 # ---------- MULTI-LANGUAGE UI SUPPORT ----------
-LANGUAGES = {
-    "English": "en",
-    "हिंदी (Hindi)": "hi",
-    "मराठी (Marathi)": "mr",
-    "ಕನ್ನಡ (Kannada)": "kn",
+# Stable internal language codes. These are the ONLY values ever stored
+# in st.session_state for the language selector. Display names (native
+# script) are looked up separately via format_func, so changing the UI
+# language never changes the underlying widget value, which is what was
+# causing the selector to get "stuck" when switching back to English.
+LANGUAGE_CODES = ["en", "hi", "mr", "kn"]
+LANGUAGE_NAMES = {
+    "en": "English",
+    "hi": "हिंदी (Hindi)",
+    "mr": "मराठी (Marathi)",
+    "kn": "ಕನ್ನಡ (Kannada)",
 }
 
 UI_TRANSLATIONS = {
@@ -510,20 +517,39 @@ UI_TRANSLATIONS = {
 }
 
 # Sidebar Language Selector
+# IMPORTANT: this uses the plain, un-wrapped st.sidebar.selectbox (the
+# translation wrappers further below only ever touch st.selectbox /
+# st.selectbox-derived calls made AFTER this point, and are never applied
+# to this widget). The widget's stored value is always one of
+# LANGUAGE_CODES ("en"/"hi"/"mr"/"kn") — format_func only changes what is
+# displayed, never what is stored — so switching languages back and forth
+# any number of times (including back to English) always works.
+if "current_language" not in st.session_state:
+    st.session_state.current_language = "en"
+
 st.sidebar.markdown("### 🌐 Language / भाषा / भाषा / ಭಾಷೆ")
-selected_language = st.sidebar.selectbox(
+CURRENT_LANG = st.sidebar.selectbox(
     "Select language",
-    list(LANGUAGES.keys()),
-    key="global_language_selector",
+    LANGUAGE_CODES,
+    format_func=lambda code: LANGUAGE_NAMES[code],
+    key="current_language",
     label_visibility="collapsed"
 )
-CURRENT_LANG = LANGUAGES[selected_language]
 
 def translate(text):
-    """Robust centralized text translation helper function."""
-    if not isinstance(text, str) or CURRENT_LANG == "en" or not text.strip():
+    """Robust centralized text translation helper function.
+
+    IMPORTANT: reads the language straight from st.session_state on every
+    call instead of closing over the CURRENT_LANG value that happened to
+    be current when this function object was defined. This matters
+    because - see the patching guard below - this whole file is
+    re-executed by Streamlit on every rerun, and this function must keep
+    working correctly no matter which earlier rerun originally created it.
+    """
+    lang = st.session_state.get("current_language", "en")
+    if not isinstance(text, str) or lang == "en" or not text.strip():
         return text
-    table = UI_TRANSLATIONS.get(CURRENT_LANG, {})
+    table = UI_TRANSLATIONS.get(lang, {})
     if text in table:
         return table[text]
     out = text
@@ -533,106 +559,150 @@ def translate(text):
             out = out.replace(source, target)
     return out
 
-# Override Streamlit components to automatically apply translation
-_original_markdown = st.markdown
-_original_caption = st.caption
-_original_info = st.info
-_original_warning = st.warning
-_original_error = st.error
-_original_success = st.success
-_original_write = st.write
-_original_button = st.button
-_original_form_submit_button = st.form_submit_button
-_original_selectbox = st.selectbox
-_original_checkbox = st.checkbox
-_original_radio = st.radio
-_original_text_input = st.text_input
-_original_number_input = st.number_input
-_original_file_uploader = st.file_uploader
-_original_camera_input = st.camera_input
-_original_spinner = st.spinner
+def _stable_key(kind, label):
+    """Deterministic widget key based ONLY on the untranslated (English)
+    label + widget kind - never on translated display text.
 
-def _translated_markdown(body, *args, **kwargs):
-    return _original_markdown(translate(body), *args, **kwargs)
+    Without this, Streamlit auto-generates a widget's identity from the
+    exact text/options passed to it. Since translate() changes that text
+    on every language switch, each switch would make Streamlit treat the
+    same logical widget as a brand new one - resetting or corrupting its
+    stored value, and occasionally throwing duplicate-widget errors when
+    cycling through several languages. Keying off the original English
+    label keeps a widget's identity constant no matter which language is
+    active, so its state survives any number of switches in any order.
+    """
+    raw = f"{kind}:{label}"
+    return "auto_" + hashlib.md5(raw.encode("utf-8")).hexdigest()[:12]
 
-def _translated_caption(body, *args, **kwargs):
-    return _original_caption(translate(body), *args, **kwargs)
+# Override Streamlit components to automatically apply translation.
+# GUARDED so this only ever runs ONCE per app process: Streamlit re-executes
+# this whole script top-to-bottom on every rerun (every language switch
+# included), but `st` is the SAME module object every time. Without this
+# guard, each rerun would capture the PREVIOUS rerun's wrapper as its own
+# "_original_markdown" (etc.) and wrap it again, stacking up nested
+# translators - each frozen to whatever language was active on that old
+# rerun. That stack is exactly what caused the selector to get stuck on a
+# non-English language no matter how many times you switched back: every
+# older, stale non-English layer re-translated the already-correct English
+# text right back out of English again.
+if not getattr(st, "_krishirakshak_i18n_patched", False):
+    # Override Streamlit components to automatically apply translation
+    _original_markdown = st.markdown
+    _original_caption = st.caption
+    _original_info = st.info
+    _original_warning = st.warning
+    _original_error = st.error
+    _original_success = st.success
+    _original_write = st.write
+    _original_button = st.button
+    _original_form_submit_button = st.form_submit_button
+    _original_selectbox = st.selectbox
+    _original_checkbox = st.checkbox
+    _original_radio = st.radio
+    _original_text_input = st.text_input
+    _original_number_input = st.number_input
+    _original_file_uploader = st.file_uploader
+    _original_camera_input = st.camera_input
+    _original_spinner = st.spinner
 
-def _translated_info(body, *args, **kwargs):
-    return _original_info(translate(body), *args, **kwargs)
+    def _translated_markdown(body, *args, **kwargs):
+        return _original_markdown(translate(body), *args, **kwargs)
 
-def _translated_warning(body, *args, **kwargs):
-    return _original_warning(translate(body), *args, **kwargs)
+    def _translated_caption(body, *args, **kwargs):
+        return _original_caption(translate(body), *args, **kwargs)
 
-def _translated_error(body, *args, **kwargs):
-    return _original_error(translate(body), *args, **kwargs)
+    def _translated_info(body, *args, **kwargs):
+        return _original_info(translate(body), *args, **kwargs)
 
-def _translated_success(body, *args, **kwargs):
-    return _original_success(translate(body), *args, **kwargs)
+    def _translated_warning(body, *args, **kwargs):
+        return _original_warning(translate(body), *args, **kwargs)
 
-def _translated_write(*args, **kwargs):
-    translated = [translate(x) if isinstance(x, str) else x for x in args]
-    return _original_write(*translated, **kwargs)
+    def _translated_error(body, *args, **kwargs):
+        return _original_error(translate(body), *args, **kwargs)
 
-def _translated_button(label, *args, **kwargs):
-    return _original_button(translate(label), *args, **kwargs)
+    def _translated_success(body, *args, **kwargs):
+        return _original_success(translate(body), *args, **kwargs)
 
-def _translated_submit(label, *args, **kwargs):
-    return _original_form_submit_button(translate(label), *args, **kwargs)
+    def _translated_write(*args, **kwargs):
+        translated = [translate(x) if isinstance(x, str) else x for x in args]
+        return _original_write(*translated, **kwargs)
 
-def _translated_selectbox(label, options, *args, **kwargs):
-    display_options = [translate(x) if isinstance(x, str) else x for x in options]
-    idx = _original_selectbox(translate(label), display_options, *args, **kwargs)
-    try:
-        val_index = display_options.index(idx)
-        return options[val_index]
-    except Exception:
-        return idx
+    def _translated_button(label, *args, **kwargs):
+        kwargs.setdefault("key", _stable_key("button", label))
+        return _original_button(translate(label), *args, **kwargs)
 
-def _translated_checkbox(label, *args, **kwargs):
-    return _original_checkbox(translate(label), *args, **kwargs)
+    def _translated_submit(label, *args, **kwargs):
+        kwargs.setdefault("key", _stable_key("submit", label))
+        return _original_form_submit_button(translate(label), *args, **kwargs)
 
-def _translated_radio(label, options, *args, **kwargs):
-    display_options = [translate(x) if isinstance(x, str) else x for x in options]
-    res = _original_radio(translate(label), display_options, *args, **kwargs)
-    try:
-        val_index = display_options.index(res)
-        return options[val_index]
-    except Exception:
-        return res
+    def _translated_selectbox(label, options, *args, **kwargs):
+        # Stable identity across language switches.
+        kwargs.setdefault("key", _stable_key("selectbox", label))
+        # IMPORTANT: the options passed to the real widget stay in their
+        # original (English) form, so the value Streamlit stores under this
+        # key is always English and always valid - only the on-screen text
+        # is translated, via format_func, on every rerun. This is what lets
+        # a selection survive any number of language switches: the stored
+        # value never becomes a translated string that could go "missing"
+        # when the language (and thus the translated option list) changes.
+        user_format_func = kwargs.pop("format_func", None)
+        def _display(option):
+            base = user_format_func(option) if user_format_func else option
+            return translate(base) if isinstance(base, str) else base
+        return _original_selectbox(translate(label), options, *args, format_func=_display, **kwargs)
 
-def _translated_text_input(label, *args, **kwargs):
-    return _original_text_input(translate(label), *args, **kwargs)
+    def _translated_checkbox(label, *args, **kwargs):
+        kwargs.setdefault("key", _stable_key("checkbox", label))
+        return _original_checkbox(translate(label), *args, **kwargs)
 
-def _translated_number_input(label, *args, **kwargs):
-    return _original_number_input(translate(label), *args, **kwargs)
+    def _translated_radio(label, options, *args, **kwargs):
+        kwargs.setdefault("key", _stable_key("radio", label))
+        # Same English-value / translated-display split as selectbox above.
+        user_format_func = kwargs.pop("format_func", None)
+        def _display(option):
+            base = user_format_func(option) if user_format_func else option
+            return translate(base) if isinstance(base, str) else base
+        return _original_radio(translate(label), options, *args, format_func=_display, **kwargs)
 
-def _translated_file_uploader(label, *args, **kwargs):
-    return _original_file_uploader(translate(label), *args, **kwargs)
+    def _translated_text_input(label, *args, **kwargs):
+        kwargs.setdefault("key", _stable_key("text_input", label))
+        return _original_text_input(translate(label), *args, **kwargs)
 
-def _translated_camera_input(label, *args, **kwargs):
-    return _original_camera_input(translate(label), *args, **kwargs)
+    def _translated_number_input(label, *args, **kwargs):
+        kwargs.setdefault("key", _stable_key("number_input", label))
+        return _original_number_input(translate(label), *args, **kwargs)
 
-def _translated_spinner(text="Working...", *args, **kwargs):
-    return _original_spinner(translate(text), *args, **kwargs)
+    def _translated_file_uploader(label, *args, **kwargs):
+        kwargs.setdefault("key", _stable_key("file_uploader", label))
+        return _original_file_uploader(translate(label), *args, **kwargs)
 
-st.markdown = _translated_markdown
-st.caption = _translated_caption
-st.info = _translated_info
-st.warning = _translated_warning
-st.error = _translated_error
-st.success = _translated_success
-st.write = _translated_write
-st.button = _translated_button
-st.form_submit_button = _translated_submit
-st.selectbox = _translated_selectbox
-st.checkbox = _translated_checkbox
-st.radio = _translated_radio
-st.text_input = _translated_text_input
-st.number_input = _translated_number_input
-st.file_uploader = _translated_file_uploader
-st.camera_input = _translated_camera_input
-st.spinner = _translated_spinner
+    def _translated_camera_input(label, *args, **kwargs):
+        kwargs.setdefault("key", _stable_key("camera_input", label))
+        return _original_camera_input(translate(label), *args, **kwargs)
+
+    def _translated_spinner(text="Working...", *args, **kwargs):
+        return _original_spinner(translate(text), *args, **kwargs)
+
+    st.markdown = _translated_markdown
+    st.caption = _translated_caption
+    st.info = _translated_info
+    st.warning = _translated_warning
+    st.error = _translated_error
+    st.success = _translated_success
+    st.write = _translated_write
+    st.button = _translated_button
+    st.form_submit_button = _translated_submit
+    st.selectbox = _translated_selectbox
+    st.checkbox = _translated_checkbox
+    st.radio = _translated_radio
+    st.text_input = _translated_text_input
+    st.number_input = _translated_number_input
+    st.file_uploader = _translated_file_uploader
+    st.camera_input = _translated_camera_input
+    st.spinner = _translated_spinner
+    st._krishirakshak_i18n_patched = True
+
 
 # ---------- Custom styling ----------
 st.markdown("""
@@ -1426,15 +1496,15 @@ with st.form(key="farmer_info_form"):
         )
 
     st.markdown('<div class="subsection-title">🌡️ ' + translate("I know the current weather conditions") + '</div>', unsafe_allow_html=True)
-    know_weather = st.checkbox(translate("I know the current weather conditions"))
+    know_weather = st.checkbox("I know the current weather conditions")
     temp_c = None
     humidity_pct = None
     if know_weather:
         w1, w2 = st.columns(2)
         with w1:
-            temp_c = st.number_input(translate("Temperature (°C)"), min_value=0, max_value=55, value=28)
+            temp_c = st.number_input("Temperature (°C)", min_value=0, max_value=55, value=28)
         with w2:
-            humidity_pct = st.number_input(translate("Humidity (%)"), min_value=0, max_value=100, value=70)
+            humidity_pct = st.number_input("Humidity (%)", min_value=0, max_value=100, value=70)
 
     st.markdown('<div class="subsection-title">🧪 ' + translate("Have you already applied any treatment?") + '</div>', unsafe_allow_html=True)
     applied_treatment = st.radio("Have you already applied any treatment?", ["No", "Yes"], horizontal=True, label_visibility="collapsed")
