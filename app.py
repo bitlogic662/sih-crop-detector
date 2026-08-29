@@ -5,6 +5,8 @@ from PIL import Image, UnidentifiedImageError, ImageStat
 import numpy as np
 import json
 import io
+import os
+import requests
 from collections import Counter
 from gtts import gTTS
 
@@ -16,6 +18,19 @@ st.set_page_config(
 
 # Configuration settings
 CONFIDENCE_THRESHOLD = 60.0  # Percentage minimum required for a valid diagnosis
+
+# ---------- WEATHER API CONFIGURATION ----------
+# Get a free API key at https://openweathermap.org/api and set it as either
+# a Streamlit secret (OPENWEATHER_API_KEY) or an environment variable.
+def _get_openweather_api_key():
+    try:
+        if "OPENWEATHER_API_KEY" in st.secrets:
+            return st.secrets["OPENWEATHER_API_KEY"]
+    except Exception:
+        pass
+    return os.environ.get("OPENWEATHER_API_KEY", "")
+
+OPENWEATHER_API_KEY = _get_openweather_api_key()
 
 # ---------- GROWTH STAGE ESTIMATION ----------
 # Typical day-range timelines (in days after sowing/transplanting) per crop.
@@ -65,6 +80,44 @@ def assess_weather_risk(temp_c, humidity_pct):
         return "Moderate", "Conditions are moderately favorable for disease spread. Monitor closely and treat at first signs of worsening."
     else:
         return "Low", "Current temperature and humidity are less favorable for rapid disease spread, but continue routine monitoring."
+
+def fetch_live_weather(location_name, api_key=OPENWEATHER_API_KEY):
+    """
+    Fetches current temperature (°C) and humidity (%) for a village/city or
+    district name using the OpenWeatherMap Current Weather API.
+    Returns (temp_c, humidity_pct, error_message). On success error_message is None.
+    """
+    if not location_name or not location_name.strip():
+        return None, None, "Please enter a village/city or district name first."
+    if not api_key:
+        return None, None, "Weather API key not configured. Set OPENWEATHER_API_KEY to enable live weather."
+    try:
+        # Bias the search toward India since this app targets Indian farmers.
+        resp = requests.get(
+            "https://api.openweathermap.org/data/2.5/weather",
+            params={"q": f"{location_name.strip()},IN", "appid": api_key, "units": "metric"},
+            timeout=8,
+        )
+        if resp.status_code == 404:
+            # Retry without the country bias in case it's a less common place name.
+            resp = requests.get(
+                "https://api.openweathermap.org/data/2.5/weather",
+                params={"q": location_name.strip(), "appid": api_key, "units": "metric"},
+                timeout=8,
+            )
+        if resp.status_code == 200:
+            data = resp.json()
+            temp_c = round(data["main"]["temp"])
+            humidity_pct = round(data["main"]["humidity"])
+            return temp_c, humidity_pct, None
+        elif resp.status_code == 404:
+            return None, None, f"Could not find weather for '{location_name}'. Try the nearest larger town or your district name."
+        elif resp.status_code == 401:
+            return None, None, "Weather API key is invalid or not yet activated."
+        else:
+            return None, None, f"Weather service returned an error (status {resp.status_code}). Please enter weather manually."
+    except requests.exceptions.RequestException:
+        return None, None, "Could not reach the weather service. Check your internet connection or enter weather manually."
 
 # ---------- MULTI-LANGUAGE UI SUPPORT ----------
 # Stable internal language codes. These are the ONLY values ever stored
@@ -1464,6 +1517,40 @@ else:
     if file_list:
         uploaded_files = file_list
 
+# ---------- LIVE WEATHER AUTO-FETCH (outside the form so the button works instantly) ----------
+st.markdown('<div class="subsection-title">🌦️ ' + translate("Auto-fetch current weather (optional)") + '</div>', unsafe_allow_html=True)
+wf1, wf2 = st.columns([3, 1])
+with wf1:
+    weather_location_input = st.text_input(
+        translate("Village / City or District for weather lookup"),
+        value=st.session_state.get("weather_location_input", ""),
+        key="weather_location_input",
+        placeholder=translate("e.g. Nashik or Pune"),
+    )
+with wf2:
+    st.write("")
+    st.write("")
+    fetch_weather_clicked = st.button("📡 " + translate("Fetch Weather"))
+
+if fetch_weather_clicked:
+    fetched_temp, fetched_humidity, weather_error = fetch_live_weather(weather_location_input)
+    if weather_error:
+        st.warning(translate(weather_error))
+        st.session_state["fetched_weather"] = None
+    else:
+        st.session_state["fetched_weather"] = {
+            "temp_c": fetched_temp,
+            "humidity_pct": fetched_humidity,
+            "location": weather_location_input.strip(),
+        }
+
+if st.session_state.get("fetched_weather"):
+    fw = st.session_state["fetched_weather"]
+    st.success(
+        f"🌡️ {fw['temp_c']}°C · 💧 {fw['humidity_pct']}% "
+        f"{translate('humidity for')} {fw['location']} — {translate('values pre-filled below, adjust if needed.')}"
+    )
+
 with st.form(key="farmer_info_form"):
     st.markdown('<div class="subsection-title">📋 ' + translate("Crop Information") + '</div>', unsafe_allow_html=True)
     f1, f2 = st.columns(2)
@@ -1495,16 +1582,28 @@ with st.form(key="farmer_info_form"):
             ["Normal", "High rainfall", "High humidity", "Very hot", "Very dry"]
         )
 
+    _fetched_weather = st.session_state.get("fetched_weather")
     st.markdown('<div class="subsection-title">🌡️ ' + translate("I know the current weather conditions") + '</div>', unsafe_allow_html=True)
-    know_weather = st.checkbox("I know the current weather conditions")
+    know_weather = st.checkbox(
+        "I know the current weather conditions",
+        value=bool(_fetched_weather),
+    )
     temp_c = None
     humidity_pct = None
     if know_weather:
         w1, w2 = st.columns(2)
         with w1:
-            temp_c = st.number_input("Temperature (°C)", min_value=0, max_value=55, value=28)
+            temp_c = st.number_input(
+                "Temperature (°C)",
+                min_value=0, max_value=55,
+                value=_fetched_weather["temp_c"] if _fetched_weather else 28,
+            )
         with w2:
-            humidity_pct = st.number_input("Humidity (%)", min_value=0, max_value=100, value=70)
+            humidity_pct = st.number_input(
+                "Humidity (%)",
+                min_value=0, max_value=100,
+                value=_fetched_weather["humidity_pct"] if _fetched_weather else 70,
+            )
 
     st.markdown('<div class="subsection-title">🧪 ' + translate("Have you already applied any treatment?") + '</div>', unsafe_allow_html=True)
     applied_treatment = st.radio("Have you already applied any treatment?", ["No", "Yes"], horizontal=True, label_visibility="collapsed")
