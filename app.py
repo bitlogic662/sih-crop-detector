@@ -1101,6 +1101,7 @@ treatment_db = {
         "timing": "At first symptoms; repeat every 7–10 days, more frequently in wet weather",
         "phi": "5–7 days (confirm on product label)",
         "disclaimer_label": "copper-based bactericides",
+        "actions": ["Remove and destroy visibly infected leaves.", "Avoid overhead irrigation; switch to drip irrigation where possible.", "Apply the recommended copper-based bactericide as directed.", "Sanitize tools and hands between handling plants.", "Rotate away from peppers/tomatoes for at least 2 seasons."],
     },
     "Potato___Early_blight": {
         "immediate_step": "Remove and destroy the lower, most-infected leaves; improve airflow between rows.",
@@ -1112,6 +1113,7 @@ treatment_db = {
         "timing": "At first symptoms; repeat every 7–10 days",
         "phi": "7 days (confirm on product label)",
         "disclaimer_label": "Mancozeb-based fungicides",
+        "actions": ["Remove and destroy the lower, most-infected leaves.", "Apply the recommended fungicide every 7–10 days.", "Practice crop rotation with non-solanaceous crops.", "Ensure proper plant spacing for good airflow.", "Avoid overhead watering, especially late in the day."],
     },
     "Potato___Late_blight": {
         "immediate_step": "Remove and destroy infected foliage immediately; avoid overhead irrigation to limit spread.",
@@ -1123,6 +1125,7 @@ treatment_db = {
         "timing": "Immediately at first symptoms; repeat every 5–7 days, more frequently in humid weather",
         "phi": "5–7 days (confirm on product label)",
         "disclaimer_label": "copper/Mancozeb fungicides",
+        "actions": ["Remove and destroy infected plants/leaves immediately.", "Apply the recommended systemic fungicide without delay.", "Improve field drainage and avoid waterlogging.", "Destroy volunteer potato plants and cull piles nearby.", "Monitor the field daily during humid or rainy weather."],
     },
     "Tomato___Bacterial_spot": {
         "immediate_step": "Remove infected leaves; avoid overhead irrigation as water splashes spread bacteria.",
@@ -1134,6 +1137,7 @@ treatment_db = {
         "timing": "At first symptoms; repeat every 7–10 days",
         "phi": "5–7 days (confirm on product label)",
         "disclaimer_label": "copper/Mancozeb bactericide-fungicide sprays",
+        "actions": ["Remove infected leaves and sanitize tools between plants.", "Apply the recommended copper/Mancozeb spray.", "Avoid overhead irrigation.", "Avoid working in the field while foliage is wet.", "Rotate with non-solanaceous crops next season."],
     },
     "Tomato___Early_blight": {
         "immediate_step": "Prune and remove lower infected foliage; mulch around the base to reduce spore splash.",
@@ -1145,6 +1149,7 @@ treatment_db = {
         "timing": "At first symptoms; repeat every 7–10 days",
         "phi": "7 days (confirm on product label)",
         "disclaimer_label": "chlorothalonil/Mancozeb fungicides",
+        "actions": ["Prune and remove lower infected foliage.", "Apply the recommended fungicide.", "Mulch around the base to reduce spore splash.", "Stake or cage plants to improve airflow.", "Water at the base of the plant, not on the foliage."],
     },
     "Tomato___Late_blight": {
         "immediate_step": "Remove infected leaves/plants promptly; increase plant spacing and avoid overhead irrigation.",
@@ -1156,6 +1161,7 @@ treatment_db = {
         "timing": "Immediately at first symptoms; repeat every 5–7 days, more frequently in humid weather",
         "phi": "5–7 days (confirm on product label)",
         "disclaimer_label": "copper/Mancozeb fungicides",
+        "actions": ["Remove and destroy infected foliage/plants immediately.", "Apply the recommended systemic fungicide without delay.", "Increase plant spacing to improve airflow.", "Avoid overhead irrigation.", "Monitor closely during humid or rainy weather."],
     },
     "Tomato___Leaf_Mold": {
         "immediate_step": "Improve ventilation/air circulation and reduce humidity around plants; remove affected leaves.",
@@ -1167,6 +1173,7 @@ treatment_db = {
         "timing": "At first symptoms; repeat every 10–14 days",
         "phi": "3–5 days (confirm on product label)",
         "disclaimer_label": "difenoconazole/copper-based fungicides",
+        "actions": ["Improve greenhouse or field ventilation.", "Apply the recommended fungicide.", "Reduce humidity around plants.", "Remove affected leaves.", "Avoid overly dense planting."],
     },
     "Tomato___Septoria_leaf_spot": {
         "immediate_step": "Remove lower infected leaves promptly to delay upward spread; avoid wetting foliage.",
@@ -1178,6 +1185,7 @@ treatment_db = {
         "timing": "At first symptoms; repeat every 7–10 days",
         "phi": "7 days (confirm on product label)",
         "disclaimer_label": "chlorothalonil/copper fungicides",
+        "actions": ["Remove lower infected leaves promptly.", "Apply the recommended fungicide.", "Avoid wetting the foliage while watering.", "Mulch to reduce soil splash onto leaves.", "Rotate crops each season."],
     },
     "Tomato___Spider_mites Two-spotted_spider_mite": {
         "immediate_step": "Hose down affected foliage to knock down mite populations; remove heavily infested leaves.",
@@ -1189,6 +1197,7 @@ treatment_db = {
         "timing": "At first signs of webbing/stippling; repeat every 5–7 days",
         "phi": "3–5 days (confirm on product label)",
         "disclaimer_label": "neem oil/miticides",
+        "actions": ["Hose down affected foliage to knock down mite populations.", "Apply neem oil or a recommended miticide.", "Remove heavily infested leaves.", "Keep the field free of weeds that harbor mites.", "Encourage natural predators such as ladybugs."],
     },
     "Tomato___Target_Spot": {
         "immediate_step": "Remove infected lower leaves and plant debris; avoid prolonged leaf wetness.",
@@ -1200,6 +1209,7 @@ treatment_db = {
         "timing": "At first symptoms; repeat every 7–10 days",
         "phi": "7 days (confirm on product label)",
         "disclaimer_label": "azoxystrobin/chlorothalonil fungicides",
+        "actions": ["Remove infected lower leaves and plant debris.", "Apply the recommended fungicide.", "Avoid prolonged leaf wetness.", "Improve air circulation around plants.", "Rotate crops each season."],
     },
     "Tomato___Tomato_Yellow_Leaf_Curl_Virus": {
         "immediate_step": "Rogue out and destroy severely infected plants; control whitefly vectors with sticky traps.",
@@ -1211,6 +1221,7 @@ treatment_db = {
         "timing": "At first sign of whiteflies; repeat every 7–10 days",
         "phi": "7 days (confirm on product label)",
         "disclaimer_label": "imidacloprid-based insecticides",
+        "actions": ["Rogue out and destroy severely infected plants.", "Control whitefly vectors with the recommended insecticide.", "Use yellow sticky traps to monitor and reduce whiteflies.", "Use reflective mulches to deter whiteflies.", "Avoid planting new seedlings next to infected fields."],
     },
     "Tomato___Tomato_mosaic_virus": {
         "immediate_step": "Remove and burn infected plants immediately; disinfect tools and hands before touching healthy plants.",
@@ -1222,6 +1233,7 @@ treatment_db = {
         "timing": "Not applicable",
         "phi": "Not applicable",
         "disclaimer_label": "chemical treatments (none effective for this viral disease)",
+        "actions": ["Remove and burn infected plants immediately.", "Disinfect tools and hands before touching healthy plants.", "Avoid tobacco use near plants, as the virus can spread via tobacco products.", "Control aphids and other insect vectors.", "Use certified virus-free seeds next season."],
     },
     "Pepper__bell___healthy": {
         "immediate_step": "No action needed. Continue balanced watering and optimal soil fertility.",
@@ -1233,6 +1245,7 @@ treatment_db = {
         "timing": "Not applicable",
         "phi": "Not applicable",
         "disclaimer_label": "no treatment (healthy crop)",
+        "actions": ["Continue balanced watering and fertilization.", "Monitor leaves weekly for early symptoms.", "Maintain field sanitation and crop rotation practices.", "No chemical treatment is needed at this time."],
     },
     "Potato___healthy": {
         "immediate_step": "No action needed. Ensure adequate potassium and nitrogen nutrients and irrigate early in the day.",
@@ -1244,6 +1257,7 @@ treatment_db = {
         "timing": "Not applicable",
         "phi": "Not applicable",
         "disclaimer_label": "no treatment (healthy crop)",
+        "actions": ["Continue balanced watering and fertilization.", "Monitor leaves weekly for early symptoms.", "Maintain field sanitation and crop rotation practices.", "No chemical treatment is needed at this time."],
     },
     "Tomato___healthy": {
         "immediate_step": "No action needed. Continue good agricultural practices and weekly monitoring.",
@@ -1255,6 +1269,7 @@ treatment_db = {
         "timing": "Not applicable",
         "phi": "Not applicable",
         "disclaimer_label": "no treatment (healthy crop)",
+        "actions": ["Continue balanced watering and fertilization.", "Monitor leaves weekly for early symptoms.", "Maintain field sanitation and crop rotation practices.", "No chemical treatment is needed at this time."],
     },
 }
 
@@ -1646,6 +1661,8 @@ if submit_button:
                                 f"on {crop_name.lower()} {disease_only_name.lower()}. Always confirm the exact rate on your product's label, "
                                 f"as concentration can vary by brand and formulation. When in doubt, consult your local agricultural officer."
                             )
+                        actions_list = treatment_entry.get("actions", [])
+                        actions_html = "".join(f"<li style='margin-bottom:4px;'>{translate(a)}</li>" for a in actions_list)
                         st.markdown(f"""
                             <div class="helpline-card">
                                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
@@ -1657,6 +1674,7 @@ if submit_button:
                                     <div><b>{translate("Application timing")}:</b> {translate(treatment_entry["timing"])}</div>
                                     <div><b>{translate("Typical pre-harvest interval")}:</b> {translate(treatment_entry["phi"])}</div>
                                 </div>
+                                {f'<div style="margin-top:14px;"><b>{translate("Treatment Actions")}:</b><ul style="margin:6px 0 0 0; padding-left:20px; color:#eef2e6;">{actions_html}</ul></div>' if actions_list else ""}
                                 <div style="font-size:0.8rem; color:#bcc7ab; margin-top:12px; border-top: 1px solid rgba(255,255,255,0.1); padding-top:10px;">
                                     ⚠️ {translate(disclaimer_text)}
                                 </div>
