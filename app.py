@@ -1223,6 +1223,39 @@ treatment_db = {
         "phi": "Not applicable",
         "disclaimer_label": "chemical treatments (none effective for this viral disease)",
     },
+    "Pepper__bell___healthy": {
+        "immediate_step": "No action needed. Continue balanced watering and optimal soil fertility.",
+        "product": "No pesticide or fungicide required",
+        "purpose": "N/A — crop is healthy; no disease or pest symptoms detected",
+        "rate": "Not applicable",
+        "water_volume": "Not applicable",
+        "method": "Not applicable — continue routine field monitoring",
+        "timing": "Not applicable",
+        "phi": "Not applicable",
+        "disclaimer_label": "no treatment (healthy crop)",
+    },
+    "Potato___healthy": {
+        "immediate_step": "No action needed. Ensure adequate potassium and nitrogen nutrients and irrigate early in the day.",
+        "product": "No pesticide or fungicide required",
+        "purpose": "N/A — crop is healthy; no disease or pest symptoms detected",
+        "rate": "Not applicable",
+        "water_volume": "Not applicable",
+        "method": "Not applicable — continue routine field monitoring",
+        "timing": "Not applicable",
+        "phi": "Not applicable",
+        "disclaimer_label": "no treatment (healthy crop)",
+    },
+    "Tomato___healthy": {
+        "immediate_step": "No action needed. Continue good agricultural practices and weekly monitoring.",
+        "product": "No pesticide or fungicide required",
+        "purpose": "N/A — crop is healthy; no disease or pest symptoms detected",
+        "rate": "Not applicable",
+        "water_volume": "Not applicable",
+        "method": "Not applicable — continue routine field monitoring",
+        "timing": "Not applicable",
+        "phi": "Not applicable",
+        "disclaimer_label": "no treatment (healthy crop)",
+    },
 }
 
 # Image validation and safety check functions
@@ -1592,21 +1625,27 @@ if submit_button:
                     st.markdown('<div class="section-header">💊 ' + translate("Treatment") + '</div>', unsafe_allow_html=True)
                     st.markdown('<div class="subsection-title">🧪 ' + translate("Pesticide / Fungicide (if needed)") + '</div>', unsafe_allow_html=True)
 
-                    if is_healthy_overall or not treatment_entry:
+                    if not treatment_entry:
                         st.markdown(f"""
                             <div class="helpline-card">
-                                {translate("No pesticide or fungicide is needed at this time — the crop appears healthy. Continue routine monitoring and good agricultural practices.") if is_healthy_overall else translate("No specific product data is available for this condition. Please consult your local agricultural officer.")}
+                                {translate("No specific product data is available for this condition. Please consult your local agricultural officer.")}
                             </div>
                         """, unsafe_allow_html=True)
                     else:
                         disease_only_name = primary_info["disease_name"]
                         if disease_only_name.lower().startswith(crop_name.lower()):
                             disease_only_name = disease_only_name[len(crop_name):].strip()
-                        disclaimer_text = (
-                            f"Reference rate based on general extension guidance for {treatment_entry.get('disclaimer_label', 'this product')} "
-                            f"on {crop_name.lower()} {disease_only_name.lower()}. Always confirm the exact rate on your product's label, "
-                            f"as concentration can vary by brand and formulation. When in doubt, consult your local agricultural officer."
-                        )
+                        if is_healthy_overall:
+                            disclaimer_text = (
+                                "No pesticide or fungicide is needed at this time — the crop appears healthy. "
+                                "Continue routine monitoring and good agricultural practices."
+                            )
+                        else:
+                            disclaimer_text = (
+                                f"Reference rate based on general extension guidance for {treatment_entry.get('disclaimer_label', 'this product')} "
+                                f"on {crop_name.lower()} {disease_only_name.lower()}. Always confirm the exact rate on your product's label, "
+                                f"as concentration can vary by brand and formulation. When in doubt, consult your local agricultural officer."
+                            )
                         st.markdown(f"""
                             <div class="helpline-card">
                                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
