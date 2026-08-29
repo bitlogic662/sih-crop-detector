@@ -68,9 +68,9 @@ def assess_weather_risk(temp_c, humidity_pct):
 # ---------- MULTI-LANGUAGE UI SUPPORT ----------
 LANGUAGES = {
     "English": "en",
-    "हिंदी (Hindi)": "hi",
-    "मराठी (Marathi)": "mr",
-    "ಕನ್ನಡ (Kannada)": "kn",
+    "ಕನ್ನಡ": "kn",
+    "हिन्दी": "hi",
+    "मराठी": "mr",
 }
 
 UI_TRANSLATIONS = {
@@ -574,26 +574,13 @@ def _translated_write(*args, **kwargs):
     translated = [translate(x) if isinstance(x, str) else x for x in args]
     return _original_write(*translated, **kwargs)
 
-# LANGUAGE FIX: Streamlit derives each widget's internal identity/state from its
-# label (and options) text. Since that text changes per selected language, the
-# SAME logical widget was being treated as a brand-new widget every time the
-# language changed, so its stored value used the just-translated text as if it
-# were the stable source. This helper builds a key from the ORIGINAL, untranslated
-# label so a widget's identity/state stays stable across every language switch,
-# ensuring it (and its text) always reverts correctly when English is selected.
-def _stable_widget_key(prefix, original_label):
-    return f"{prefix}::{original_label}"
-
 def _translated_button(label, *args, **kwargs):
-    kwargs.setdefault("key", _stable_widget_key("btn", label))  # LANGUAGE FIX
     return _original_button(translate(label), *args, **kwargs)
 
 def _translated_submit(label, *args, **kwargs):
-    kwargs.setdefault("key", _stable_widget_key("submit", label))  # LANGUAGE FIX
     return _original_form_submit_button(translate(label), *args, **kwargs)
 
 def _translated_selectbox(label, options, *args, **kwargs):
-    kwargs.setdefault("key", _stable_widget_key("sel", label))  # LANGUAGE FIX
     display_options = [translate(x) if isinstance(x, str) else x for x in options]
     idx = _original_selectbox(translate(label), display_options, *args, **kwargs)
     try:
@@ -603,11 +590,9 @@ def _translated_selectbox(label, options, *args, **kwargs):
         return idx
 
 def _translated_checkbox(label, *args, **kwargs):
-    kwargs.setdefault("key", _stable_widget_key("chk", label))  # LANGUAGE FIX
     return _original_checkbox(translate(label), *args, **kwargs)
 
 def _translated_radio(label, options, *args, **kwargs):
-    kwargs.setdefault("key", _stable_widget_key("radio", label))  # LANGUAGE FIX
     display_options = [translate(x) if isinstance(x, str) else x for x in options]
     res = _original_radio(translate(label), display_options, *args, **kwargs)
     try:
@@ -617,19 +602,15 @@ def _translated_radio(label, options, *args, **kwargs):
         return res
 
 def _translated_text_input(label, *args, **kwargs):
-    kwargs.setdefault("key", _stable_widget_key("txt", label))  # LANGUAGE FIX
     return _original_text_input(translate(label), *args, **kwargs)
 
 def _translated_number_input(label, *args, **kwargs):
-    kwargs.setdefault("key", _stable_widget_key("num", label))  # LANGUAGE FIX
     return _original_number_input(translate(label), *args, **kwargs)
 
 def _translated_file_uploader(label, *args, **kwargs):
-    kwargs.setdefault("key", _stable_widget_key("file", label))  # LANGUAGE FIX
     return _original_file_uploader(translate(label), *args, **kwargs)
 
 def _translated_camera_input(label, *args, **kwargs):
-    kwargs.setdefault("key", _stable_widget_key("cam", label))  # LANGUAGE FIX
     return _original_camera_input(translate(label), *args, **kwargs)
 
 def _translated_spinner(text="Working...", *args, **kwargs):
@@ -1445,15 +1426,15 @@ with st.form(key="farmer_info_form"):
         )
 
     st.markdown('<div class="subsection-title">🌡️ ' + translate("I know the current weather conditions") + '</div>', unsafe_allow_html=True)
-    know_weather = st.checkbox("I know the current weather conditions")  # LANGUAGE FIX: st.checkbox already translates its label; removed the extra translate() so the label stays the stable English source text
+    know_weather = st.checkbox(translate("I know the current weather conditions"))
     temp_c = None
     humidity_pct = None
     if know_weather:
         w1, w2 = st.columns(2)
         with w1:
-            temp_c = st.number_input("Temperature (°C)", min_value=0, max_value=55, value=28)  # LANGUAGE FIX: removed extra translate(), st.number_input already translates its label
+            temp_c = st.number_input(translate("Temperature (°C)"), min_value=0, max_value=55, value=28)
         with w2:
-            humidity_pct = st.number_input("Humidity (%)", min_value=0, max_value=100, value=70)  # LANGUAGE FIX: removed extra translate(), st.number_input already translates its label
+            humidity_pct = st.number_input(translate("Humidity (%)"), min_value=0, max_value=100, value=70)
 
     st.markdown('<div class="subsection-title">🧪 ' + translate("Have you already applied any treatment?") + '</div>', unsafe_allow_html=True)
     applied_treatment = st.radio("Have you already applied any treatment?", ["No", "Yes"], horizontal=True, label_visibility="collapsed")
@@ -1476,7 +1457,7 @@ with st.form(key="farmer_info_form"):
     with c_loc2:
         district = st.text_input("District (optional)")
 
-    submit_button = st.form_submit_button(label="🔍 Analyze All Photos")  # LANGUAGE FIX: removed extra translate(), st.form_submit_button already translates its label
+    submit_button = st.form_submit_button(label="🔍 " + translate("Analyze All Photos"))
 
 if submit_button:
     if not uploaded_files:
