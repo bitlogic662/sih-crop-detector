@@ -48,6 +48,23 @@ def estimate_growth_stage(crop, age_days, fallback_stage=None):
     # Beyond the known range: treat as the final (Mature) stage
     return list(timelines.keys())[-1]
 
+# ---------- WEATHER-BASED DISEASE-SPREAD RISK ----------
+def assess_weather_risk(temp_c, humidity_pct):
+    """
+    Estimates fungal/bacterial disease-spread risk from temperature (°C) and
+    relative humidity (%). Warm + humid conditions favor most leaf diseases.
+    Returns (risk_level, message).
+    """
+    if temp_c is None or humidity_pct is None:
+        return None, None
+
+    if humidity_pct >= 80 or (24 <= temp_c <= 32 and humidity_pct >= 65):
+        return "High", "Warm, humid conditions strongly favor fungal and bacterial disease spread. Spray promptly and avoid overhead irrigation."
+    elif humidity_pct >= 60 or (18 <= temp_c <= 34):
+        return "Moderate", "Conditions are moderately favorable for disease spread. Monitor closely and treat at first signs of worsening."
+    else:
+        return "Low", "Current temperature and humidity are less favorable for rapid disease spread, but continue routine monitoring."
+
 # ---------- MULTI-LANGUAGE UI SUPPORT ----------
 LANGUAGES = {
     "English": "en",
@@ -1083,6 +1100,7 @@ treatment_db = {
         "method": "Foliar spray covering both sides of the leaves",
         "timing": "At first symptoms; repeat every 7–10 days, more frequently in wet weather",
         "phi": "5–7 days (confirm on product label)",
+        "disclaimer_label": "copper-based bactericides",
     },
     "Potato___Early_blight": {
         "immediate_step": "Remove and destroy the lower, most-infected leaves; improve airflow between rows.",
@@ -1093,6 +1111,7 @@ treatment_db = {
         "method": "Foliar spray covering both sides of the leaves",
         "timing": "At first symptoms; repeat every 7–10 days",
         "phi": "7 days (confirm on product label)",
+        "disclaimer_label": "Mancozeb-based fungicides",
     },
     "Potato___Late_blight": {
         "immediate_step": "Remove and destroy infected foliage immediately; avoid overhead irrigation to limit spread.",
@@ -1103,6 +1122,7 @@ treatment_db = {
         "method": "Foliar spray covering both sides of the leaves",
         "timing": "Immediately at first symptoms; repeat every 5–7 days, more frequently in humid weather",
         "phi": "5–7 days (confirm on product label)",
+        "disclaimer_label": "copper/Mancozeb fungicides",
     },
     "Tomato___Bacterial_spot": {
         "immediate_step": "Remove infected leaves; avoid overhead irrigation as water splashes spread bacteria.",
@@ -1113,6 +1133,7 @@ treatment_db = {
         "method": "Foliar spray covering both sides of the leaves",
         "timing": "At first symptoms; repeat every 7–10 days",
         "phi": "5–7 days (confirm on product label)",
+        "disclaimer_label": "copper/Mancozeb bactericide-fungicide sprays",
     },
     "Tomato___Early_blight": {
         "immediate_step": "Prune and remove lower infected foliage; mulch around the base to reduce spore splash.",
@@ -1123,6 +1144,7 @@ treatment_db = {
         "method": "Foliar spray covering both sides of the leaves",
         "timing": "At first symptoms; repeat every 7–10 days",
         "phi": "7 days (confirm on product label)",
+        "disclaimer_label": "chlorothalonil/Mancozeb fungicides",
     },
     "Tomato___Late_blight": {
         "immediate_step": "Remove infected leaves/plants promptly; increase plant spacing and avoid overhead irrigation.",
@@ -1133,6 +1155,7 @@ treatment_db = {
         "method": "Foliar spray covering both sides of the leaves",
         "timing": "Immediately at first symptoms; repeat every 5–7 days, more frequently in humid weather",
         "phi": "5–7 days (confirm on product label)",
+        "disclaimer_label": "copper/Mancozeb fungicides",
     },
     "Tomato___Leaf_Mold": {
         "immediate_step": "Improve ventilation/air circulation and reduce humidity around plants; remove affected leaves.",
@@ -1143,6 +1166,7 @@ treatment_db = {
         "method": "Foliar spray covering both sides of the leaves",
         "timing": "At first symptoms; repeat every 10–14 days",
         "phi": "3–5 days (confirm on product label)",
+        "disclaimer_label": "difenoconazole/copper-based fungicides",
     },
     "Tomato___Septoria_leaf_spot": {
         "immediate_step": "Remove lower infected leaves promptly to delay upward spread; avoid wetting foliage.",
@@ -1153,6 +1177,7 @@ treatment_db = {
         "method": "Foliar spray covering both sides of the leaves",
         "timing": "At first symptoms; repeat every 7–10 days",
         "phi": "7 days (confirm on product label)",
+        "disclaimer_label": "chlorothalonil/copper fungicides",
     },
     "Tomato___Spider_mites Two-spotted_spider_mite": {
         "immediate_step": "Hose down affected foliage to knock down mite populations; remove heavily infested leaves.",
@@ -1163,6 +1188,7 @@ treatment_db = {
         "method": "Foliar spray targeting the undersides of leaves",
         "timing": "At first signs of webbing/stippling; repeat every 5–7 days",
         "phi": "3–5 days (confirm on product label)",
+        "disclaimer_label": "neem oil/miticides",
     },
     "Tomato___Target_Spot": {
         "immediate_step": "Remove infected lower leaves and plant debris; avoid prolonged leaf wetness.",
@@ -1173,6 +1199,7 @@ treatment_db = {
         "method": "Foliar spray covering both sides of the leaves",
         "timing": "At first symptoms; repeat every 7–10 days",
         "phi": "7 days (confirm on product label)",
+        "disclaimer_label": "azoxystrobin/chlorothalonil fungicides",
     },
     "Tomato___Tomato_Yellow_Leaf_Curl_Virus": {
         "immediate_step": "Rogue out and destroy severely infected plants; control whitefly vectors with sticky traps.",
@@ -1183,6 +1210,7 @@ treatment_db = {
         "method": "Foliar spray, focusing on leaf undersides and new growth",
         "timing": "At first sign of whiteflies; repeat every 7–10 days",
         "phi": "7 days (confirm on product label)",
+        "disclaimer_label": "imidacloprid-based insecticides",
     },
     "Tomato___Tomato_mosaic_virus": {
         "immediate_step": "Remove and burn infected plants immediately; disinfect tools and hands before touching healthy plants.",
@@ -1193,6 +1221,7 @@ treatment_db = {
         "method": "Not applicable — focus on sanitation and roguing infected plants",
         "timing": "Not applicable",
         "phi": "Not applicable",
+        "disclaimer_label": "chemical treatments (none effective for this viral disease)",
     },
 }
 
@@ -1333,6 +1362,17 @@ with st.form(key="farmer_info_form"):
             "Recent weather / field condition",
             ["Normal", "High rainfall", "High humidity", "Very hot", "Very dry"]
         )
+
+    st.markdown('<div class="subsection-title">🌡️ ' + translate("I know the current weather conditions") + '</div>', unsafe_allow_html=True)
+    know_weather = st.checkbox(translate("I know the current weather conditions"))
+    temp_c = None
+    humidity_pct = None
+    if know_weather:
+        w1, w2 = st.columns(2)
+        with w1:
+            temp_c = st.number_input(translate("Temperature (°C)"), min_value=0, max_value=55, value=28)
+        with w2:
+            humidity_pct = st.number_input(translate("Humidity (%)"), min_value=0, max_value=100, value=70)
 
     st.markdown('<div class="subsection-title">🧪 ' + translate("Have you already applied any treatment?") + '</div>', unsafe_allow_html=True)
     applied_treatment = st.radio("Have you already applied any treatment?", ["No", "Yes"], horizontal=True, label_visibility="collapsed")
@@ -1517,9 +1557,9 @@ if submit_button:
 
                     # ---- Recommended Action (Detailed 6-Step Breakdown) ----
                     severity_descriptions = {
-                        "Healthy": "No disease symptoms detected in this photo.",
-                        "Moderate": "Noticeable symptoms present; manageable with prompt action.",
-                        "Severe": "Significant symptoms present; disease is spreading and needs urgent action.",
+                        "Healthy": "The AI model detects no visible symptoms of disease.",
+                        "Moderate": "The AI model detects early to moderate visual symptoms of disease.",
+                        "Severe": "The AI model detects strong, widespread visual symptoms of disease.",
                     }
                     primary_severity = primary_info.get("severity", "Moderate")
                     primary_class_raw = primary_info.get("class_raw", "")
@@ -1531,9 +1571,9 @@ if submit_button:
                         immediate_step_text = translate("Continue regular monitoring; no immediate action needed.")
                         next_action_text = translate("Re-inspect within 5–7 days as part of routine monitoring.")
                     else:
-                        chemical_guidance = translate("Yes — see the Treatment / Pesticide section below for the recommended product and dosage.") if treatment_entry and treatment_entry.get("product") != "No effective chemical cure available" else translate("No effective chemical cure — see the Treatment section below for cultural control steps.")
+                        chemical_guidance = translate("A fungicide/bactericide treatment is appropriate at this stage if symptoms persist or worsen — see the Treatment section below.") if treatment_entry and treatment_entry.get("product") != "No effective chemical cure available" else translate("No effective chemical cure — see the Treatment section below for cultural control steps.")
                         immediate_step_text = translate(treatment_entry["immediate_step"]) if treatment_entry else translate(primary_info.get("action", ""))
-                        next_action_text = translate("Re-inspect within 2–3 days to check whether the treatment is working.")
+                        next_action_text = translate("Re-inspect the crop within 2–3 days to track progress.")
 
                     st.markdown('<div class="section-header">✅ ' + translate("Recommended Action") + '</div>', unsafe_allow_html=True)
                     st.markdown(f"""
@@ -1541,8 +1581,8 @@ if submit_button:
                             <div style="margin-bottom:10px;"><b>1. {translate("Disease detected")}:</b> {translate(crop_name)} — {translated_overall_title} ({translate("Confidence")}: {primary_info.get("confidence", 0):.1f}%)</div>
                             <div style="margin-bottom:10px;"><b>2. {translate("Estimated severity")}:</b> {translate(primary_severity)} — {translate(severity_desc)}</div>
                             <div style="margin-bottom:10px;"><b>3. {translate("Immediate step")}:</b> {immediate_step_text}</div>
-                            <div style="margin-bottom:10px;"><b>4. {translate("Chemical treatment needed?")}:</b> {chemical_guidance}</div>
-                            <div><b>5. {translate("Next action")}:</b> {next_action_text}</div>
+                            <div style="margin-bottom:10px;"><b>4–5. {translate("Chemical treatment needed?")}</b> {chemical_guidance}</div>
+                            <div><b>6. {translate("Next action")}:</b> {next_action_text}</div>
                         </div>
                     """, unsafe_allow_html=True)
 
@@ -1559,6 +1599,14 @@ if submit_button:
                             </div>
                         """, unsafe_allow_html=True)
                     else:
+                        disease_only_name = primary_info["disease_name"]
+                        if disease_only_name.lower().startswith(crop_name.lower()):
+                            disease_only_name = disease_only_name[len(crop_name):].strip()
+                        disclaimer_text = (
+                            f"Reference rate based on general extension guidance for {treatment_entry.get('disclaimer_label', 'this product')} "
+                            f"on {crop_name.lower()} {disease_only_name.lower()}. Always confirm the exact rate on your product's label, "
+                            f"as concentration can vary by brand and formulation. When in doubt, consult your local agricultural officer."
+                        )
                         st.markdown(f"""
                             <div class="helpline-card">
                                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
@@ -1571,7 +1619,7 @@ if submit_button:
                                     <div><b>{translate("Typical pre-harvest interval")}:</b> {translate(treatment_entry["phi"])}</div>
                                 </div>
                                 <div style="font-size:0.8rem; color:#bcc7ab; margin-top:12px; border-top: 1px solid rgba(255,255,255,0.1); padding-top:10px;">
-                                    ⚠️ {translate("Reference rate based on general extension guidance. Actual product availability, formulation, and label rates vary by manufacturer and region. Always confirm exact rate on your product label. When in doubt, consult your local agricultural officer.")}
+                                    ⚠️ {translate(disclaimer_text)}
                                 </div>
                             </div>
                         """, unsafe_allow_html=True)
@@ -1629,6 +1677,50 @@ if submit_button:
                         st.info(f"🌧️ **{translate('Weather Risk')}:** {translate('High humidity or rainfall significantly speeds up fungal and bacterial disease progression. Ensure good field drainage and avoid overhead irrigation.')}")
                     elif recent_weather == "Very hot":
                         st.info(f"☀️ **{translate('Weather Risk')}:** {translate('Hot weather increases plant stress and pest population multiplication (such as spider mites). Ensure proper irrigation.')}")
+
+                    # ================= NEW: Detailed Weather Risk / Urgency Badge / Generic Precaution =================
+                    st.markdown('<div class="section-header">🌧️ ' + translate("Weather Risk") + '</div>', unsafe_allow_html=True)
+                    weather_risk_level, weather_risk_msg = assess_weather_risk(temp_c, humidity_pct)
+                    if weather_risk_level is None:
+                        st.markdown(f"""
+                            <div class="helpline-card">
+                                {translate("Weather information not provided — tick 'I know the current weather conditions' above to see disease-spread risk based on temperature and humidity.")}
+                            </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        risk_color = "#e0665a" if weather_risk_level == "High" else ("#f2c744" if weather_risk_level == "Moderate" else "#7bd389")
+                        st.markdown(f"""
+                            <div class="helpline-card">
+                                <b style="color:{risk_color};">{translate(weather_risk_level + ' Risk')}</b> — {translate(weather_risk_msg)}
+                            </div>
+                        """, unsafe_allow_html=True)
+
+                    if prior_history == "Yes":
+                        st.info("ℹ️ " + translate("Since this field has had this issue before, disease pressure may already be established — consider crop rotation and field sanitation for future seasons."))
+
+                    st.write("")
+
+                    # ---- How Quickly Should You Act? ----
+                    st.markdown('<div class="section-header">⏰ ' + translate("How Quickly Should You Act?") + '</div>', unsafe_allow_html=True)
+                    urgency_dot = "🔴" if urgency_color == "#e0665a" else ("🟡" if urgency_color == "#f2c744" else "🟢")
+                    st.markdown(f"""
+                        <div style="display:inline-flex; align-items:center; gap:8px; border:2px solid {urgency_color}; color:{urgency_color}; border-radius:30px; padding:10px 22px; font-weight:800; font-size:1rem;">
+                            {urgency_dot} {translate(urgency_text)}
+                        </div>
+                        <div style="margin-top:10px; color:#eef2e6;">{translate(urgency_desc)}</div>
+                    """, unsafe_allow_html=True)
+
+                    st.write("")
+
+                    # ---- Important Precaution (generic safety disclaimer) ----
+                    st.markdown('<div class="section-header">🛡️ ' + translate("Important Precaution") + '</div>', unsafe_allow_html=True)
+                    st.markdown(
+                        '<div style="color:#eef2e6;">' +
+                        translate("This recommendation is AI-assisted and advisory only. Always read and follow the actual pesticide label instructions, respect the pre-harvest interval, wear protective equipment while spraying, and consult your local Krishi Vibhag extension officer or agronomist for confirmation before applying any chemical treatment.") +
+                        '</div>',
+                        unsafe_allow_html=True
+                    )
+                    # ================= END NEW SECTIONS =================
 
                     # Farmer Info Overview
                     st.markdown('<div class="section-header">👨‍🌾 ' + translate("Farmer Information") + '</div>', unsafe_allow_html=True)
