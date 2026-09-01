@@ -5,6 +5,7 @@ from PIL import Image, UnidentifiedImageError, ImageStat
 import numpy as np
 import json
 import io
+import requests
 from collections import Counter
 from gtts import gTTS
 
@@ -65,6 +66,97 @@ def assess_weather_risk(temp_c, humidity_pct):
         return "Moderate", "Conditions are moderately favorable for disease spread. Monitor closely and treat at first signs of worsening."
     else:
         return "Low", "Current temperature and humidity are less favorable for rapid disease spread, but continue routine monitoring."
+
+# ---------- AUTOMATIC WEATHER API ----------
+def get_weather_from_location(village_or_city, district=""):
+    """
+    Gets current temperature and relative humidity automatically from
+    Open-Meteo using the farmer's village/city and optional district.
+    No API key is required.
+    Returns (temperature_c, humidity_pct, weather_description).
+    """
+    location_parts = [str(v).strip() for v in [village_or_city, district] if v and str(v).strip()]
+    if not location_parts:
+        return None, None, None
+
+    location_query = ", ".join(location_parts)
+
+    try:
+        geo_response = requests.get(
+            "https://geocoding-api.open-meteo.com/v1/search",
+            params={
+                "name": location_query,
+                "count": 1,
+                "language": "en",
+                "format": "json",
+            },
+            timeout=8,
+        )
+        geo_response.raise_for_status()
+        geo_data = geo_response.json()
+        results = geo_data.get("results", [])
+
+        # If the combined village + district is not found, retry with city/village only.
+        if not results and village_or_city:
+            geo_response = requests.get(
+                "https://geocoding-api.open-meteo.com/v1/search",
+                params={
+                    "name": str(village_or_city).strip(),
+                    "count": 1,
+                    "language": "en",
+                    "format": "json",
+                },
+                timeout=8,
+            )
+            geo_response.raise_for_status()
+            geo_data = geo_response.json()
+            results = geo_data.get("results", [])
+
+        if not results:
+            return None, None, None
+
+        place = results[0]
+        latitude = place["latitude"]
+        longitude = place["longitude"]
+
+        weather_response = requests.get(
+            "https://api.open-meteo.com/v1/forecast",
+            params={
+                "latitude": latitude,
+                "longitude": longitude,
+                "current": "temperature_2m,relative_humidity_2m,precipitation",
+                "timezone": "auto",
+            },
+            timeout=8,
+        )
+        weather_response.raise_for_status()
+        weather_data = weather_response.json()
+        current = weather_data.get("current", {})
+
+        temp = current.get("temperature_2m")
+        humidity = current.get("relative_humidity_2m")
+        precipitation = current.get("precipitation", 0)
+
+        if temp is None or humidity is None:
+            return None, None, None
+
+        if precipitation and precipitation > 0:
+            condition = "Rain currently reported"
+        elif humidity >= 80:
+            condition = "High humidity"
+        elif temp >= 35:
+            condition = "Very hot"
+        elif temp <= 15:
+            condition = "Cool"
+        else:
+            condition = "Normal"
+
+        return float(temp), float(humidity), condition
+
+    except Exception:
+        # Weather should never prevent the AI disease analysis from running.
+        return None, None, None
+
 
 # ---------- MULTI-LANGUAGE UI SUPPORT ----------
 # Stable internal language codes. These are the ONLY values ever stored
@@ -224,7 +316,9 @@ UI_TRANSLATIONS = {
         "High": "उच्च",
         "Severe": "गंभीर",
         "Early": "शुरुआती", "Advanced": "उन्नत", "Critical": "गंभीर",
-        "Early stage": "शुरुआती अवस्था", "Progressed": "प्रगति पर", "Advanced stage": "उन्नत अवस्था"
+        "Early stage": "शुरुआती अवस्था", "Progressed": "प्रगति पर", "Advanced stage": "उन्नत अवस्था",
+        "Weather information could not be fetched. Enter a valid Village / City or District and try again.": "मौसम की जानकारी प्राप्त नहीं हो सकी। कृपया मान्य गाँव / शहर या जिले का नाम दर्ज करके पुनः प्रयास करें।",
+        "Fetching current weather...": "वर्तमान मौसम की जानकारी प्राप्त की जा रही है..."
     },
     "mr": {
         "Early Detection & Management of Crop Diseases and Pest Infestations": "पिकांचे रोग आणि किडींचा लवकर शोध व व्यवस्थापन",
@@ -368,7 +462,9 @@ UI_TRANSLATIONS = {
         "High": "उच्च",
         "Severe": "गंभीर",
         "Early": "शुरुवातीचे", "Advanced": "प्रगत", "Critical": "गंभीर",
-        "Early stage": "शुरुवातीची अवस्था", "Progressed": "प्रगतीपथावर", "Advanced stage": "प्रगत अवस्था"
+        "Early stage": "शुरुवातीची अवस्था", "Progressed": "प्रगतीपथावर", "Advanced stage": "प्रगत अवस्था",
+        "Weather information could not be fetched. Enter a valid Village / City or District and try again.": "हवामानाची माहिती मिळू शकली नाही. कृपया वैध गाव / शहर किंवा जिल्हा टाकून पुन्हा प्रयत्न करा.",
+        "Fetching current weather...": "सध्याचे हवामान मिळवत आहे..."
     },
     "kn": {
         "Early Detection & Management of Crop Diseases and Pest Infestations": "ಬೆಳೆ ರೋಗಗಳು ಮತ್ತು ಕೀಟ ಬಾಧೆಗಳ ಆರಂಭಿಕ ಪತ್ತೆ ಮತ್ತು ನಿರ್ವಹಣೆ",
@@ -1046,6 +1142,32 @@ st.markdown("""
     }
     .mini-metric-num { font-size: 1.5rem; font-weight: 800; color: #f2c744; }
     .mini-metric-label { font-size: 0.75rem; color: #d3ddc7; margin-top: 2px; }
+
+    .weather-pop {
+        animation: popIn 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+        transform-origin: center top;
+    }
+    .weather-chip {
+        display: inline-block;
+        padding: 7px 12px;
+        border-radius: 999px;
+        background: rgba(242,199,68,0.13);
+        border: 1px solid rgba(242,199,68,0.35);
+        color: #f6f9f2;
+        font-weight: 700;
+        font-size: 0.88rem;
+    }
+    @keyframes popIn {
+        0% { opacity: 0; transform: scale(0.96) translateY(8px); }
+        100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .result-card:hover,
+    .treatment-box:hover,
+    .helpline-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 34px rgba(0,0,0,0.34);
+        transition: all 0.2s ease;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -1495,16 +1617,11 @@ with st.form(key="farmer_info_form"):
             ["Normal", "High rainfall", "High humidity", "Very hot", "Very dry"]
         )
 
-    st.markdown('<div class="subsection-title">🌡️ ' + translate("I know the current weather conditions") + '</div>', unsafe_allow_html=True)
-    know_weather = st.checkbox("I know the current weather conditions")
+    # Weather is fetched automatically after the farmer enters the location below.
+    # No temperature or humidity questions are shown to the farmer.
     temp_c = None
     humidity_pct = None
-    if know_weather:
-        w1, w2 = st.columns(2)
-        with w1:
-            temp_c = st.number_input("Temperature (°C)", min_value=0, max_value=55, value=28)
-        with w2:
-            humidity_pct = st.number_input("Humidity (%)", min_value=0, max_value=100, value=70)
+    weather_api_condition = None
 
     st.markdown('<div class="subsection-title">🧪 ' + translate("Have you already applied any treatment?") + '</div>', unsafe_allow_html=True)
     applied_treatment = st.radio("Have you already applied any treatment?", ["No", "Yes"], horizontal=True, label_visibility="collapsed")
@@ -1528,6 +1645,16 @@ with st.form(key="farmer_info_form"):
         district = st.text_input("District (optional)")
 
     submit_button = st.form_submit_button(label="🔍 " + translate("Analyze All Photos"))
+
+# Automatic weather lookup using the farmer's entered location.
+# This happens without asking the farmer for temperature or humidity.
+if submit_button and (village.strip() or district.strip()):
+    with st.spinner("Fetching current weather..."):
+        temp_c, humidity_pct, weather_api_condition = get_weather_from_location(
+            village, district
+        )
+elif submit_button:
+    weather_api_condition = None
 
 if submit_button:
     if not uploaded_files:
@@ -1819,20 +1946,31 @@ if submit_button:
                     elif recent_weather == "Very hot":
                         st.info(f"☀️ **{translate('Weather Risk')}:** {translate('Hot weather increases plant stress and pest population multiplication (such as spider mites). Ensure proper irrigation.')}")
 
-                    # ================= NEW: Detailed Weather Risk / Urgency Badge / Generic Precaution =================
+                    # ================= AUTOMATIC WEATHER API RISK =================
                     st.markdown('<div class="section-header">🌧️ ' + translate("Weather Risk") + '</div>', unsafe_allow_html=True)
                     weather_risk_level, weather_risk_msg = assess_weather_risk(temp_c, humidity_pct)
+
                     if weather_risk_level is None:
                         st.markdown(f"""
                             <div class="helpline-card">
-                                {translate("Weather information not provided — tick 'I know the current weather conditions' above to see disease-spread risk based on temperature and humidity.")}
+                                🌍 {translate("Weather information could not be fetched. Enter a valid Village / City or District and try again.")}
                             </div>
                         """, unsafe_allow_html=True)
                     else:
                         risk_color = "#e0665a" if weather_risk_level == "High" else ("#f2c744" if weather_risk_level == "Moderate" else "#7bd389")
+                        weather_location_text = f"{village}, {district}".strip(", ")
                         st.markdown(f"""
-                            <div class="helpline-card">
-                                <b style="color:{risk_color};">{translate(weather_risk_level + ' Risk')}</b> — {translate(weather_risk_msg)}
+                            <div class="helpline-card weather-pop">
+                                <div style="font-size:1.05rem; font-weight:800; color:#f6f9f2; margin-bottom:8px;">
+                                    🌍 {weather_location_text if weather_location_text else "Current location weather"}
+                                </div>
+                                <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
+                                    <span class="weather-chip">🌡️ {temp_c:.1f} °C</span>
+                                    <span class="weather-chip">💧 {humidity_pct:.0f}% humidity</span>
+                                    <span class="weather-chip">☁️ {weather_api_condition or "Current conditions"}</span>
+                                </div>
+                                <b style="color:{risk_color};">{translate(weather_risk_level + ' Risk')}</b>
+                                <span style="color:#d3ddc7;"> — {translate(weather_risk_msg)}</span>
                             </div>
                         """, unsafe_allow_html=True)
 
