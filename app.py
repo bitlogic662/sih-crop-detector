@@ -199,6 +199,83 @@ DISEASE_DISPLAY_MAP = {
 
 
 # =========================================================
+# TREATMENT DATABASE — specific products, rates, and actions
+# (ported from the reference app's treatment_db, keyed to match
+# the exact raw class name strings in class_names.json)
+# =========================================================
+
+TREATMENT_DB = {
+    "Pepper__bell___Bacterial_spot": {
+        "immediate_step": "Remove and destroy visibly spotted leaves; avoid working in the field when foliage is wet.",
+        "product": "Copper Oxychloride 50% WP (or Streptocycline 90% + Copper Oxychloride)",
+        "purpose": "Bactericide — helps control bacterial spot",
+        "rate": "2.5–3 g per litre of water",
+        "water_volume": "Spray to full leaf wetness (approx. 500–600 L/acre)",
+        "method": "Foliar spray covering both sides of the leaves",
+        "timing": "At first symptoms; repeat every 7–10 days, more frequently in wet weather",
+        "phi": "5–7 days (confirm on product label)",
+        "actions": [
+            "Remove and destroy visibly infected leaves.",
+            "Avoid overhead irrigation; switch to drip irrigation where possible.",
+            "Apply the recommended copper-based bactericide as directed.",
+            "Sanitize tools and hands between handling plants.",
+            "Rotate away from peppers/tomatoes for at least 2 seasons.",
+        ],
+    },
+    "Potato___Early_blight": {
+        "immediate_step": "Remove and destroy the lower, most-infected leaves; improve airflow between rows.",
+        "product": "Mancozeb 75% WP",
+        "purpose": "Fungicide — helps control early blight",
+        "rate": "2–2.5 g per litre of water",
+        "water_volume": "Spray to full leaf wetness (approx. 500–600 L/acre)",
+        "method": "Foliar spray covering both sides of the leaves",
+        "timing": "At first symptoms; repeat every 7–10 days",
+        "phi": "7 days (confirm on product label)",
+        "actions": [
+            "Remove and destroy the lower, most-infected leaves.",
+            "Apply the recommended fungicide every 7–10 days.",
+            "Practice crop rotation with non-solanaceous crops.",
+            "Ensure proper plant spacing for good airflow.",
+            "Avoid overhead watering, especially late in the day.",
+        ],
+    },
+    "Tomato_Late_blight": {
+        "immediate_step": "Remove infected leaves/plants promptly; increase plant spacing and avoid overhead irrigation.",
+        "product": "Copper Oxychloride 50% WP (or Mancozeb 75% WP)",
+        "purpose": "Fungicide — helps control late blight",
+        "rate": "2.5–3 g per litre of water",
+        "water_volume": "Spray to full leaf wetness (approx. 500–600 L/acre)",
+        "method": "Foliar spray covering both sides of the leaves",
+        "timing": "Immediately at first symptoms; repeat every 5–7 days, more frequently in humid weather",
+        "phi": "5–7 days (confirm on product label)",
+        "actions": [
+            "Remove and destroy infected foliage/plants immediately.",
+            "Apply the recommended systemic fungicide without delay.",
+            "Increase plant spacing to improve airflow.",
+            "Avoid overhead irrigation.",
+            "Monitor closely during humid or rainy weather.",
+        ],
+    },
+    "Tomato_healthy": {
+        "immediate_step": "No action needed. Continue good agricultural practices and weekly monitoring.",
+        "product": "No pesticide or fungicide required",
+        "purpose": "N/A — crop is healthy; no disease or pest symptoms detected",
+        "rate": "Not applicable",
+        "water_volume": "Not applicable",
+        "method": "Not applicable — continue routine field monitoring",
+        "timing": "Not applicable",
+        "phi": "Not applicable",
+        "actions": [
+            "Continue balanced watering and fertilization.",
+            "Monitor leaves weekly for early symptoms.",
+            "Maintain field sanitation and crop rotation practices.",
+            "No chemical treatment is needed at this time.",
+        ],
+    },
+}
+
+
+# =========================================================
 # QUESTIONNAIRE DATA
 # =========================================================
 
@@ -240,91 +317,39 @@ QUESTIONS = [
 # TREATMENT ADVICE LOGIC (ported from generateTreatmentAdvice in script.js)
 # =========================================================
 
-def generate_treatment_advice(disease_display, field_answers):
+def generate_treatment_advice(disease_raw, disease_display, field_answers):
     advice = []
+    entry = TREATMENT_DB.get(disease_raw)
 
-    if disease_display == "Tomato Late Blight":
+    if entry:
         advice.append({
             "icon": "🚨", "title": "Immediate Action",
-            "text": "Inspect the surrounding tomato plants because late blight can spread quickly "
-                    "under favorable conditions. Separate or manage severely affected plant material "
-                    "where appropriate.",
-        })
-        advice.append({
-            "icon": "🌿", "title": "Field Management",
-            "text": "Improve air circulation and avoid unnecessary prolonged leaf wetness. "
-                    "Continue regular scouting of nearby plants.",
-        })
-        advice.append({
-            "icon": "💊", "title": "Treatment",
-            "text": "Use only a locally approved late-blight management product when recommended "
-                    "by the agricultural extension service or product label. Follow the label for "
-                    "dose, application interval and pre-harvest requirements.",
-        })
-        advice.append({
-            "icon": "🛡️", "title": "Integrated Pest Management",
-            "text": "Combine field sanitation, resistant or tolerant varieties where available, "
-                    "weather-based monitoring and appropriate chemical control rather than relying "
-                    "only on repeated spraying.",
+            "text": entry["immediate_step"],
         })
 
-    elif disease_display == "Potato Early Blight":
-        advice.append({
-            "icon": "🚨", "title": "Immediate Action",
-            "text": "Inspect nearby potato plants for additional lesions and monitor whether the "
-                    "affected area is increasing.",
-        })
-        advice.append({
-            "icon": "🧹", "title": "Field Sanitation",
-            "text": "Remove severely affected plant material where appropriate and maintain good "
-                    "field hygiene.",
-        })
-        advice.append({
-            "icon": "💊", "title": "Treatment",
-            "text": "Use a locally approved early-blight management product only according to the "
-                    "product label or agricultural extension recommendation.",
-        })
-        advice.append({
-            "icon": "🌧️", "title": "Moisture Management",
-            "text": "Avoid prolonged leaf wetness and improve field conditions that allow foliage "
-                    "to dry.",
-        })
-
-    elif disease_display == "Bell Pepper Bacterial Spot":
-        advice.append({
-            "icon": "🔬", "title": "Confirm the Diagnosis",
-            "text": "Because bacterial and fungal leaf symptoms can sometimes look similar, "
-                    "consider expert or laboratory confirmation when the diagnosis is uncertain.",
-        })
-        advice.append({
-            "icon": "🧹", "title": "Sanitation",
-            "text": "Remove severely affected plant material where appropriate and avoid spreading "
-                    "contaminated plant debris between fields.",
-        })
-        advice.append({
-            "icon": "💧", "title": "Water Management",
-            "text": "Avoid unnecessary overhead irrigation and reduce prolonged leaf wetness where "
-                    "practical.",
-        })
-        advice.append({
-            "icon": "🧑‍🌾", "title": "Treatment",
-            "text": "Follow locally approved bacterial-disease management recommendations. Do not "
-                    "automatically repeat a chemical treatment without checking the label and "
-                    "expert guidance.",
-        })
-
-    elif disease_display == "Healthy":
-        advice.append({
-            "icon": "✅", "title": "No Disease Detected",
-            "text": "The plant appears healthy. Continue regular monitoring to catch any early "
-                    "signs of disease.",
-        })
-        advice.append({
-            "icon": "🔎", "title": "Preventive Scouting",
-            "text": "Keep scouting nearby plants on a regular schedule, especially after rain or "
-                    "high-humidity periods.",
-        })
-
+        if entry["product"] != "No pesticide or fungicide required":
+            actions_html = "".join(f"<li>{a}</li>" for a in entry["actions"])
+            advice.append({
+                "icon": "💊", "title": f"Recommended Product: {entry['product']}",
+                "text": (
+                    f"<b>Purpose:</b> {entry['purpose']}<br>"
+                    f"<b>Rate:</b> {entry['rate']}<br>"
+                    f"<b>Water volume:</b> {entry['water_volume']}<br>"
+                    f"<b>Method:</b> {entry['method']}<br>"
+                    f"<b>Timing:</b> {entry['timing']}<br>"
+                    f"<b>Pre-harvest interval:</b> {entry['phi']}"
+                ),
+            })
+            advice.append({
+                "icon": "🛡️", "title": "Treatment Actions",
+                "text": f"<ul style='margin:0;padding-left:18px;'>{actions_html}</ul>",
+            })
+        else:
+            advice.append({
+                "icon": "✅", "title": "No Treatment Needed",
+                "text": "The plant appears healthy — no pesticide or fungicide is required. "
+                        "Continue regular monitoring.",
+            })
     else:
         advice.append({
             "icon": "🔎", "title": "Monitor the Crop",
@@ -650,7 +675,7 @@ elif st.session_state.page == "AI Diagnosis":
             </div>
             """, unsafe_allow_html=True)
 
-            advice = generate_treatment_advice(disease_display, answers)
+            advice = generate_treatment_advice(result["disease_raw"], disease_display, answers)
 
             for item in advice:
                 st.markdown(f"""
@@ -658,7 +683,7 @@ elif st.session_state.page == "AI Diagnosis":
                     <div class="krk-advice-icon">{item['icon']}</div>
                     <div>
                         <strong>{item['title']}</strong>
-                        <p>{item['text']}</p>
+                        <div style="color:#a4b8aa;font-size:12px;line-height:1.55;">{item['text']}</div>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
