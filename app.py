@@ -410,6 +410,8 @@ if "diag_result" not in st.session_state:
     st.session_state.diag_result = None
 if "uploaded_image" not in st.session_state:
     st.session_state.uploaded_image = None
+if "show_questionnaire" not in st.session_state:
+    st.session_state.show_questionnaire = False
 
 
 # =========================================================
@@ -442,6 +444,12 @@ def questionnaire_popup():
             if st.button("← Back", use_container_width=True):
                 st.session_state.diag_step -= 1
                 st.rerun()
+        else:
+            if st.button("✕ Cancel", use_container_width=True):
+                st.session_state.show_questionnaire = False
+                st.session_state.diag_step = 0
+                st.session_state.diag_answers = {}
+                st.rerun()
 
     with col2:
         is_last = step == len(QUESTIONS) - 1
@@ -461,6 +469,7 @@ def questionnaire_popup():
                 }
                 st.session_state.diag_step = 0
                 st.session_state.diag_answers = {}
+                st.session_state.show_questionnaire = False
                 st.rerun()
             else:
                 st.session_state.diag_step += 1
@@ -592,9 +601,16 @@ elif st.session_state.page == "AI Diagnosis":
         if st.button("🔬 Analyze Crop", disabled=analyze_disabled, use_container_width=True):
             st.session_state.diag_step = 0
             st.session_state.diag_answers = {}
-            questionnaire_popup()
+            st.session_state.show_questionnaire = True
+            st.rerun()
 
         st.markdown('</div>', unsafe_allow_html=True)
+
+    # Re-open the dialog on every rerun for as long as it's flagged open —
+    # this is what keeps it alive across "Next →" / "Back" clicks instead
+    # of closing after the first question.
+    if st.session_state.show_questionnaire:
+        questionnaire_popup()
 
     with col_result:
         result = st.session_state.diag_result
