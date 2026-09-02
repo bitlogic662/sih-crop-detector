@@ -161,19 +161,15 @@ def predict_disease(image: Image.Image):
     """
     Runs the uploaded image through the MobileNetV2 model.
 
-    NOTE: This uses tf.keras.applications.mobilenet_v2.preprocess_input,
-    the standard preprocessing for MobileNetV2 transfer learning
-    (scales pixels to [-1, 1]). If your training pipeline instead used
-    a plain rescale of 1./255, swap the preprocessing line below —
-    otherwise predictions will be systematically wrong even though the
-    model itself is accurate.
+    Preprocessing confirmed from the working reference app (success1.txt):
+    resize to 224x224, then a plain rescale of pixel values to [0, 1]
+    (divide by 255.0) — NOT tf.keras.applications.mobilenet_v2.preprocess_input.
     """
     model = load_model()
     class_names = load_class_names()
 
     img = image.convert("RGB").resize(IMG_SIZE)
-    arr = np.array(img).astype("float32")
-    arr = tf.keras.applications.mobilenet_v2.preprocess_input(arr)
+    arr = np.array(img, dtype=np.float32) / 255.0
     arr = np.expand_dims(arr, axis=0)
 
     preds = model.predict(arr, verbose=0)[0]
@@ -181,9 +177,13 @@ def predict_disease(image: Image.Image):
     confidence = float(preds[top_idx]) * 100
 
     disease_raw = class_names[top_idx]
-    disease_display = disease_raw.replace("___", " ").replace("__", " ").replace("_", " ").strip()
+    disease_display = DISEASE_DISPLAY_MAP.get(disease_raw)
 
-    return disease_raw, disease_display, confidence
+    if disease_display is None:
+        # Fallback for any class not in the map — shouldn't normally hit this
+        disease_display = disease_raw.replace("___", " ").replace("__", " ").replace("_", " ").strip().title()
+
+    return disease_raw, disease_display, confidence, preds
 
 
 # =========================================================
@@ -460,11 +460,12 @@ def questionnaire_popup():
             if is_last:
                 # Run inference now that all answers are collected
                 image = st.session_state.uploaded_image
-                disease_raw, disease_display, confidence = predict_disease(image)
+                disease_raw, disease_display, confidence, all_preds = predict_disease(image)
                 st.session_state.diag_result = {
                     "disease_raw": disease_raw,
                     "disease_display": disease_display,
                     "confidence": confidence,
+                    "all_preds": all_preds,
                     "answers": dict(st.session_state.diag_answers),
                 }
                 st.session_state.diag_step = 0
@@ -663,6 +664,21 @@ elif st.session_state.page == "AI Diagnosis":
                 """, unsafe_allow_html=True)
 
             st.markdown('</div>', unsafe_allow_html=True)
+
+            # Debug panel — shows raw model output for every class so you can
+            # tell whether a wrong prediction is a preprocessing/label-order
+            # issue or a genuine model confidence issue.
+            with st.expander("🔧 Debug: raw model probabilities"):
+                class_names = load_class_names()
+                all_preds = result["all_preds"]
+                for cname, prob in sorted(zip(class_names, all_preds), key=lambda x: -x[1]):
+                    st.write(f"`{cname}` → {prob * 100:.2f}%")
+                st.caption(
+                    "If the top class here looks right but the disease name shown above is "
+                    "wrong, it's a label-mapping bug. If the top class here itself looks wrong "
+                    "for the photo you uploaded, double-check that the model's training input "
+                    "size (currently assumed 224×224) matches what it was actually trained on."
+                )
         else:
             st.markdown("""
             <div class="krk-card" style="text-align:center;padding:60px 20px;color:#8ea99a;">
