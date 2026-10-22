@@ -4,6 +4,7 @@ from PIL import Image, UnidentifiedImageError, ImageStat
 import numpy as np
 import json
 import io
+import requests
 from collections import Counter
 from gtts import gTTS
 
@@ -64,6 +65,109 @@ def assess_weather_risk(temp_c, humidity_pct):
         return "Moderate", "Conditions are moderately favorable for disease spread. Monitor closely and treat at first signs of worsening."
     else:
         return "Low", "Current temperature and humidity are less favorable for rapid disease spread, but continue routine monitoring."
+
+
+def fetch_weather_for_location(village, district):
+    """Fetch current modelled weather for a village/city using Open-Meteo (no API key)."""
+    place_parts = [part.strip() for part in [village, district] if part and part.strip()]
+    if not place_parts:
+        return None, "Enter a village/city or district to fetch local weather."
+
+    place_query = ", ".join(place_parts)
+    try:
+        geo_response = requests.get(
+            "https://geocoding-api.open-meteo.com/v1/search",
+            params={"name": place_query, "count": 1, "language": "en", "format": "json"},
+            timeout=8,
+        )
+        geo_response.raise_for_status()
+        geo_results = geo_response.json().get("results", [])
+        if not geo_results:
+            # Retry with district alone if the village/city query is not found.
+            if district and village:
+                geo_response = requests.get(
+                    "https://geocoding-api.open-meteo.com/v1/search",
+                    params={"name": district, "count": 1, "language": "en", "format": "json"},
+                    timeout=8,
+                )
+                geo_response.raise_for_status()
+                geo_results = geo_response.json().get("results", [])
+        if not geo_results:
+            return None, f"Could not find weather coordinates for {place_query}. Check the village/city and district names."
+
+        place = geo_results[0]
+        weather_response = requests.get(
+            "https://api.open-meteo.com/v1/forecast",
+            params={
+                "latitude": place["latitude"],
+                "longitude": place["longitude"],
+                "current": "temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m",
+                "timezone": "auto",
+            },
+            timeout=8,
+        )
+        weather_response.raise_for_status()
+        current = weather_response.json().get("current", {})
+        if "temperature_2m" not in current or "relative_humidity_2m" not in current:
+            return None, "The weather service did not return temperature and humidity for this location."
+
+        return {
+            "place": ", ".join(str(x) for x in [place.get("name"), place.get("admin1"), place.get("country")] if x),
+            "temperature": float(current["temperature_2m"]),
+            "humidity": int(current["relative_humidity_2m"]),
+            "precipitation": float(current.get("precipitation", 0) or 0),
+            "wind_speed": float(current.get("wind_speed_10m", 0) or 0),
+            "observed_at": current.get("time", ""),
+        }, None
+    except requests.RequestException:
+        return None, "Weather service is temporarily unavailable. Check your internet connection and try again."
+    except (ValueError, TypeError, KeyError):
+        return None, "Weather data could not be interpreted. You can retry the analysis in a moment."
+
+
+def build_farmer_context_advice(symptom_duration, field_spread, recent_weather,
+                                applied_treatment, treatment_details, prior_history,
+                                history_count, soil_type, growth_stage):
+    """Turn farmer questionnaire answers into transparent, practical context notes."""
+    notes = []
+    if symptom_duration in ["Less than 1 day", "1–3 days"]:
+        notes.append("Symptoms are recent: mark the affected plants and compare them again in 2–3 days.")
+    elif symptom_duration == "4–7 days":
+        notes.append("Symptoms have been present for several days: inspect nearby plants and remove badly affected leaves where appropriate.")
+    else:
+        notes.append("Symptoms have lasted over a week: arrange a closer field inspection and confirm the diagnosis before repeating any spray.")
+
+    if field_spread in ["50–75%", "More than 75%"]:
+        notes.append("A large part of the crop is affected: prioritise a field-wide inspection and contact a local agricultural officer promptly.")
+    elif field_spread == "25–50%":
+        notes.append("Several plants appear affected: inspect the boundary of the affected patch and monitor whether it is expanding.")
+    else:
+        notes.append("The reported affected area is limited: isolate/mark affected plants and avoid moving contaminated plant material through the field.")
+
+    if recent_weather == "High rainfall":
+        notes.append("You reported high rainfall: check drainage and avoid working in wet fields when this could spread disease.")
+    elif recent_weather == "High humidity":
+        notes.append("You reported high humidity: improve airflow between plants and avoid overhead irrigation where practical.")
+    elif recent_weather == "Very hot":
+        notes.append("You reported very hot conditions: monitor soil moisture and avoid spraying during the hottest part of the day; follow the product label.")
+    elif recent_weather == "Very dry":
+        notes.append("You reported very dry conditions: check soil moisture and irrigate according to crop needs without waterlogging the root zone.")
+
+    if applied_treatment == "Yes":
+        used = f" ({treatment_details.strip()})" if treatment_details and treatment_details.strip() else ""
+        notes.append("You reported a previous treatment" + used + ": do not repeat or mix products automatically; check the label, application interval, and re-entry precautions first.")
+    if prior_history == "Yes":
+        count_text = f"about {history_count} time(s)" if history_count else "before"
+        notes.append(f"You reported this problem before ({count_text}): discuss crop rotation, field sanitation, and diagnosis confirmation with an agricultural officer.")
+    if soil_type in ["Clayey soil", "Black soil (Regur)"]:
+        notes.append("For clayey/black soil, check drainage after rain and avoid prolonged waterlogging.")
+    elif soil_type == "Sandy soil":
+        notes.append("For sandy soil, monitor moisture more frequently because water drains quickly.")
+    elif soil_type == "Red soil":
+        notes.append("For red soil, check moisture and drainage in the affected patch; soil type alone does not identify the disease.")
+    if growth_stage in ["Flowering", "Fruiting"]:
+        notes.append("The crop is in flowering/fruiting stage: check the product label for crop-stage restrictions and pre-harvest interval before any treatment.")
+    return notes
 
 # ---------- MULTI-LANGUAGE UI SUPPORT ----------
 LANGUAGES = {
@@ -976,6 +1080,48 @@ st.markdown("""
     }
     .mini-metric-num { font-size: 1.5rem; font-weight: 800; color: #f2c744; }
     .mini-metric-label { font-size: 0.75rem; color: #d3ddc7; margin-top: 2px; }
+
+    /* Modern field-friendly redesign: warm background, crisp cards, stronger hierarchy */
+    .stApp { background: linear-gradient(180deg, #f5f8f1 0%, #edf3e8 100%) !important; }
+    .stApp, .stApp p, .stApp span, .stApp label, .stApp li, .stMarkdown,
+    .stCaption, div[data-testid="stCaptionContainer"] { color: #23352a !important; }
+    [data-testid="stSidebar"] { background: #e3eddc !important; border-right: 1px solid #d2dfc8; }
+    [data-testid="stSidebar"] * { color: #23352a !important; }
+    .hero { background: linear-gradient(120deg, #123f2b 0%, #236344 58%, #5b854b 100%) !important; border-radius: 26px !important; box-shadow: 0 16px 38px rgba(25,65,42,.18) !important; }
+    .hero-title, .hero-sub { color: #f7fbf3 !important; }
+    .stat-card, .step-card, .mini-metric-card, .result-card, .helpline-card, .treatment-box, .context-card, .weather-panel {
+        background: #ffffff !important; color: #23352a !important; border: 1px solid #dce7d5 !important;
+        border-radius: 18px !important; box-shadow: 0 8px 22px rgba(35,65,42,.07) !important;
+    }
+    .stat-label, .mini-metric-label, .result-label, .weather-panel span { color: #617366 !important; }
+    .stat-num, .mini-metric-num { color: #28734b !important; }
+    .step-card b, .section-header, .subsection-title { color: #1e6541 !important; }
+    .step-card span { color: #617366 !important; }
+    .result-name { color: #20382a !important; }
+    .treatment-box h3 { color: #1e6541 !important; }
+    .treatment-box p, .treatment-box div, .helpline-card div, .context-card li, .context-card span { color: #2c4033 !important; }
+    .hero-badge { background: #f4d66d !important; color: #29432d !important; }
+    .stButton > button, [data-testid="stFormSubmitButton"] button {
+        background: linear-gradient(120deg, #236344, #318456) !important; color: #ffffff !important;
+        border: 0 !important; border-radius: 12px !important; padding: .72rem 1.15rem !important;
+        font-weight: 750 !important; box-shadow: 0 5px 14px rgba(35,99,68,.18) !important;
+    }
+    .stButton > button:hover, [data-testid="stFormSubmitButton"] button:hover { background: #174b31 !important; border: 0 !important; }
+    [data-baseweb="select"] > div, [data-testid="stTextInput"] input, [data-testid="stNumberInput"] input,
+    [data-testid="stTextArea"] textarea { background: #ffffff !important; color: #23352a !important; border-color: #cbdac5 !important; border-radius: 10px !important; }
+    [data-testid="stFileUploader"] section { background: #ffffff !important; border: 1px dashed #9bb99b !important; border-radius: 16px !important; }
+    .weather-panel, .context-card { padding: 20px 22px; margin: 12px 0 18px; }
+    .weather-panel-title, .context-card-title { font-size: 1.05rem; font-weight: 800; color: #1e6541 !important; margin-bottom: 14px; }
+    .weather-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(125px,1fr)); gap: 12px; }
+    .weather-grid > div { background: #f0f6ec; padding: 14px; border-radius: 13px; }
+    .weather-grid strong { display: block; font-size: 1.3rem; color: #236344; }
+    .weather-grid span { display: block; font-size: .82rem; margin-top: 4px; }
+    .weather-note { font-size: .78rem; color: #687a6c !important; margin-top: 12px; }
+    .context-facts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .context-facts span { background: #edf5e9; border: 1px solid #d9e8d1; padding: 7px 10px; border-radius: 9px; font-size: .85rem; }
+    .context-card ul { margin-bottom: 0; padding-left: 22px; }
+    .context-card li { margin: 8px 0; line-height: 1.45; }
+    div[data-testid="stAlert"] { border-radius: 12px !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -1413,17 +1559,10 @@ with st.form(key="farmer_info_form"):
             ["Normal", "High rainfall", "High humidity", "Very hot", "Very dry"]
         )
 
-    st.markdown('<div class="subsection-title">🌡️ ' + translate("I know the current weather conditions") + '</div>', unsafe_allow_html=True)
-    st.caption(translate("Enter the current temperature and humidity from a reliable local weather source. These values are entered manually; they are not fetched automatically."))
-    know_weather = st.checkbox(translate("I know the current weather conditions"))
+    st.markdown('<div class="subsection-title">🌦️ Local Weather</div>', unsafe_allow_html=True)
+    st.caption("After you submit the form, the app will look up current temperature, humidity, rainfall and wind for the village/city and district entered below. Weather is fetched from Open-Meteo; an internet connection is required.")
     temp_c = None
     humidity_pct = None
-    if know_weather:
-        w1, w2 = st.columns(2)
-        with w1:
-            temp_c = st.number_input(translate("Temperature (°C)"), min_value=0, max_value=55, value=28)
-        with w2:
-            humidity_pct = st.number_input(translate("Humidity (%)"), min_value=0, max_value=100, value=70)
 
     st.markdown('<div class="subsection-title">🧪 ' + translate("Have you already applied any treatment?") + '</div>', unsafe_allow_html=True)
     applied_treatment = st.radio("Have you already applied any treatment?", ["No", "Yes"], horizontal=True, label_visibility="collapsed")
@@ -1449,6 +1588,13 @@ with st.form(key="farmer_info_form"):
     submit_button = st.form_submit_button(label="🔍 " + translate("Analyze All Photos"))
 
 if submit_button:
+    weather_data, weather_error = fetch_weather_for_location(village, district)
+    if weather_data:
+        temp_c = weather_data["temperature"]
+        humidity_pct = weather_data["humidity"]
+    else:
+        temp_c = None
+        humidity_pct = None
     if not uploaded_files:
         if input_choice == "📷 Click Leaf Photo":
             st.warning("Please capture a photo first.")
@@ -1628,6 +1774,44 @@ if submit_button:
 
                     st.write("")
 
+                    # Questionnaire-driven advice: make the farmer's answers visible in the result.
+                    st.markdown('<div class="section-header">🧭 ' + translate("Field Context & Personalised Advice") + '</div>', unsafe_allow_html=True)
+                    if weather_data:
+                        st.markdown(f"""
+                            <div class="weather-panel">
+                                <div class="weather-panel-title">🌦️ Current weather for {weather_data['place']}</div>
+                                <div class="weather-grid">
+                                    <div><strong>{weather_data['temperature']:.1f}°C</strong><span>Temperature</span></div>
+                                    <div><strong>{weather_data['humidity']}%</strong><span>Relative humidity</span></div>
+                                    <div><strong>{weather_data['precipitation']:.1f} mm</strong><span>Current precipitation</span></div>
+                                    <div><strong>{weather_data['wind_speed']:.1f} km/h</strong><span>Wind speed</span></div>
+                                </div>
+                                <div class="weather-note">Weather time: {weather_data['observed_at'] or 'not provided'} · Source: Open-Meteo</div>
+                            </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        st.warning(weather_error or "Weather data is unavailable. The disease assessment will continue without API weather values.")
+
+                    context_notes = build_farmer_context_advice(
+                        symptom_duration, field_spread, recent_weather,
+                        applied_treatment, treatment_details, prior_history,
+                        history_count, soil_type, estimated_stage_key
+                    )
+                    st.markdown(f"""
+                        <div class="context-card">
+                            <div class="context-card-title">What your answers mean</div>
+                            <div class="context-facts">
+                                <span><b>Symptoms:</b> {symptom_duration}</span>
+                                <span><b>Crop affected:</b> {field_spread}</span>
+                                <span><b>Recent conditions:</b> {recent_weather}</span>
+                                <span><b>Soil:</b> {soil_type}</span>
+                                <span><b>Previous treatment:</b> {applied_treatment}</span>
+                                <span><b>Previous disease:</b> {prior_history}</span>
+                            </div>
+                            <ul>{''.join(f'<li>{translate(note)}</li>' for note in context_notes)}</ul>
+                        </div>
+                    """, unsafe_allow_html=True)
+
                     # ---- Recommended Action (Detailed 6-Step Breakdown) ----
                     severity_descriptions = {
                         "Healthy": "The AI model detects no visible symptoms of disease.",
@@ -1766,7 +1950,7 @@ if submit_button:
                     if weather_risk_level is None:
                         st.markdown(f"""
                             <div class="helpline-card">
-                                {translate("Weather information not provided — tick 'I know the current weather conditions' above to see disease-spread risk based on temperature and humidity.")}
+                                {translate("Weather risk could not be calculated because the weather API did not return temperature and humidity. Check the location fields and try again.")}
                             </div>
                         """, unsafe_allow_html=True)
                     else:
